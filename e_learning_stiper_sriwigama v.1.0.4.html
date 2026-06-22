@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Learning STIPER SRIWIGAMA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Library SheetJS untuk Export ke Excel sungguhan -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Animasi Sidebar untuk transisi halus */
+        #sidebar { transition: all 0.3s ease-in-out; }
+        /* Menyembunyikan scrollbar tapi tetap bisa scroll (untuk estetika kuis) */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 h-screen overflow-hidden flex flex-col">
+
+    <div id="app-container" class="w-full h-full">
+        <!-- Area utama tempat seluruh halaman di-render (dimuat) oleh JavaScript -->
+    </div>
+
+    <script>
+        // ==============================================================================
+        // 1. DATA STATE & VARIABEL GLOBAL
+        // Bagian ini berisi data-data tiruan (dummy) dan variabel status aplikasi
+        // ==============================================================================
+        
+        let users = [
+            { id: 'u1', username: 'admin', password: 'password', role: 'admin', name: 'Administrator', nip: '123456789', email: 'admin@stiper.ac.id', phone: '081234567890', address: 'Kampus STIPER', gender: 'Laki-laki', firstAccess: 'Senin, 1 Juni 2026 08:00:00 WIB', lastAccess: 'Senin, 22 Juni 2026 05:00:00 WIB' },
+            { id: 'u2', username: 'dosen1', password: 'password', role: 'dosen', name: 'Dr. Budi Santoso', department: 'Agribisnis', nip: '198001012005011001', email: 'budi.santoso@sriwigama.ac.id', phone: '081298765432', address: 'Jl. Merdeka No. 1', gender: 'Laki-laki', firstAccess: 'Rabu, 3 Juni 2026 09:15:00 WIB', lastAccess: 'Jumat, 19 Juni 2026 14:30:00 WIB' },
+            { id: 'u3', username: 'dosen2', password: 'password', role: 'dosen', name: 'Ir. Siti Aminah, M.P.', department: 'Agroteknologi', nip: '197502022000032001', email: 'siti.aminah@sriwigama.ac.id', phone: '081312345678', address: 'Jl. Sudirman No. 2', gender: 'Perempuan', firstAccess: 'Kamis, 4 Juni 2026 10:00:00 WIB', lastAccess: 'Senin, 22 Juni 2026 04:15:00 WIB' },
+            { id: 'u4', username: 'mhs1', password: 'password', role: 'mahasiswa', name: 'Andi Saputra', major: 'Agribisnis', semester: 3, nip: '2021001', email: 'andi@mhs.sriwigama.ac.id', phone: '085712345678', address: 'Jl. Mawar No. 3', gender: 'Laki-laki', firstAccess: 'Senin, 8 Juni 2026 11:20:00 WIB', lastAccess: 'Minggu, 21 Juni 2026 19:45:00 WIB' },
+            { id: 'u5', username: 'mhs2', password: 'password', role: 'mahasiswa', name: 'Dewi Lestari', major: 'Agroteknologi', semester: 5, nip: '2021002', email: 'dewi@mhs.sriwigama.ac.id', phone: '085887654321', address: 'Jl. Melati No. 4', gender: 'Perempuan', firstAccess: 'Selasa, 9 Juni 2026 13:10:00 WIB', lastAccess: 'Sabtu, 20 Juni 2026 08:30:00 WIB' },
+        ];
+
+        let courses = [
+            { 
+                id: 'c1', title: 'Pengantar Ilmu Pertanian', lecturerId: 'u2', department: 'Agribisnis', enrolled: ['u4'], 
+                modules: [{ id: 'm1', title: 'Modul 1: Sejarah Pertanian', content: 'Pertanian dimulai sejak zaman prasejarah...', fileName: 'Modul_1_Sejarah.pdf' }],
+                quizzes: [
+                    { id: 'q1', title: 'Kuis Evaluasi Modul 1', questions: [
+                        { q: 'Kapan pertanian mulai dikenal manusia?', options: ['Zaman Modern', 'Zaman Prasejarah', 'Abad Pertengahan', 'Era Industri'], answer: 1 }
+                    ]}
+                ],
+                quizScores: { 'q1': { 'u4': 100 } } // Format: { quizId: { userId: score } }
+            },
+            { id: 'c2', title: 'Dasar-dasar Agronomi', lecturerId: 'u3', department: 'Agroteknologi', enrolled: ['u4', 'u5'], modules: [], quizzes: [], quizScores: {} },
+            { id: 'c3', title: 'Ekonomi Pertanian', lecturerId: 'u2', department: 'Agribisnis', enrolled: [], modules: [], quizzes: [], quizScores: {} },
+        ];
+
+        let systemLogs = [];
+        let currentUser = null;
+        let activeTab = 'dashboard';
+        let selectedCourse = null;
+        
+        // Status Sidebar (true = Terbuka lebar, false = Menyempit / tertutup di mobile)
+        let isSidebarOpen = false;
+
+        // Status Mode Edit (Variabel ini melacak apa yang sedang diedit pengguna)
+        let editingModule = null;
+        let adminEditingUser = null; 
+        let adminResettingUser = null; 
+        let dosenEditingCourse = null; 
+        let logFilterRole = 'all';
+        let clockInterval = null;
+        let profileSuccessMsg = '';
+
+        // Status untuk Kuis
+        let isEditingQuiz = false; // true jika dosen sedang mengedit form kuis
+        let currentQuizData = null; // Menyimpan data sementara form kuis
+        let takingQuizId = null; // ID kuis yang sedang dikerjakan mahasiswa
+
+        const appContainer = document.getElementById('app-container');
+
+        // ==============================================================================
+        // 2. FUNGSI UTILITAS & PENCATATAN LOG
+        // ==============================================================================
+        
+        function getFormattedTime() {
+            const now = new Date();
+            return now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit', second:'2-digit' }) + ' WIB';
+        }
+
+        function addLog(action, userObj) {
+            systemLogs.unshift({
+                time: getFormattedTime(),
+                role: userObj.role,
+                user: userObj.name,
+                action: action
+            });
+        }
+
+        // Fungsi Induk: Menentukan halaman mana yang harus dimuat
+        function render() {
+            if (!currentUser) { renderLogin(); } 
+            else { renderMainLayout(); }
+        }
+
+        // ==============================================================================
+        // 3. HALAMAN LOGIN
+        // ==============================================================================
+        function renderLogin() {
+            appContainer.innerHTML = `
+                <div class="min-h-screen bg-green-50 flex items-center justify-center p-4">
+                    <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border-t-4 border-green-600 fade-in">
+                        <div class="flex flex-col items-center mb-6">
+                            <!-- Logo pada Halaman Login -->
+                            <img src="Logo STIPER.jpg" alt="Logo STIPER SRIWIGAMA" class="h-24 w-auto object-contain mb-3" onerror="this.onerror=null; this.src='https://placehold.co/100x100/166534/FFF?text=Logo';">
+                            <h1 class="text-2xl font-bold text-gray-800 text-center">STIPER SRIWIGAMA</h1>
+                            <p class="text-gray-500 text-sm">Portal E-Learning</p>
+                        </div>
+                        
+                        <div id="login-error" class="hidden bg-red-100 text-red-600 p-3 rounded mb-4 text-sm text-center"></div>
+                        
+                        <form id="login-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                                <input type="text" id="username" class="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="Masukkan username" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                <input type="password" id="password" class="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="Masukkan password" required>
+                            </div>
+                            <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 rounded hover:bg-green-700 transition duration-200">Masuk</button>
+                        </form>
+
+                        <div class="mt-6">
+                            <div class="relative"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-300"></div></div><div class="relative flex justify-center text-sm"><span class="px-2 bg-white text-gray-500">Akun Demo</span></div></div>
+                            <div class="mt-4 text-xs text-gray-500 text-center space-y-1">
+                                <p><strong>Admin:</strong> admin | password</p>
+                                <p><strong>Dosen:</strong> dosen1, dosen2 | password</p>
+                                <p><strong>Mahasiswa:</strong> mhs1, mhs2 | password</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('login-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const u = document.getElementById('username').value;
+                const p = document.getElementById('password').value;
+                const user = users.find(x => x.username === u && x.password === p);
+                
+                if (user) {
+                    currentUser = user;
+                    currentUser.lastAccess = getFormattedTime();
+                    addLog('Login ke sistem', currentUser);
+                    activeTab = 'dashboard';
+                    // Reset menu di mobile agar tertutup
+                    if(window.innerWidth < 768) isSidebarOpen = false;
+                    else isSidebarOpen = true;
+                    render();
+                } else {
+                    const err = document.getElementById('login-error');
+                    err.textContent = 'Username atau password salah!';
+                    err.classList.remove('hidden');
+                }
+            });
+        }
+
+        // ==============================================================================
+        // 4. KERANGKA UTAMA APLIKASI (NAVBAR & SIDEBAR)
+        // ==============================================================================
+        function renderMainLayout() {
+            // CSS Responsif Sidebar: 
+            // Di Mobile: w-0 (tertutup) atau w-64 absolute z-40 (terbuka menutupi konten)
+            // Di Desktop: w-20 (minimize icon saja) atau w-64 relative (terbuka lebar)
+            const sidebarClass = isSidebarOpen 
+                ? 'w-64 absolute md:relative z-40 h-full border-r shadow-xl md:shadow-none bg-white' 
+                : 'w-0 md:w-20 overflow-hidden border-r bg-white h-full';
+
+            appContainer.innerHTML = `
+                <div class="flex flex-col h-screen fade-in bg-gray-100">
+                    <!-- NAVBAR ATAS -->
+                    <nav class="bg-white border-b-4 border-green-600 shadow-sm z-50 shrink-0">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div class="flex justify-between h-16">
+                                <div class="flex items-center">
+                                    <!-- Tombol Hamburger (Minimize/Maximize Menu) -->
+                                    <button onclick="toggleSidebar()" class="mr-4 p-2 rounded-md hover:bg-green-100 text-gray-600 outline-none cursor-pointer" title="Toggle Sidebar">
+                                        <i class="fas fa-bars text-xl"></i>
+                                    </button>
+                                    <i class="fas fa-leaf text-2xl text-green-700 mr-3 hidden sm:block"></i>
+                                    <span class="font-bold text-lg md:text-xl text-green-800 hidden sm:block">STIPER SRIWIGAMA</span>
+                                </div>
+                                <div class="flex items-center space-x-2 md:space-x-3">
+                                    <!-- Tombol Profil -->
+                                    <button onclick="changeTab('profile')" class="flex items-center space-x-2 bg-green-100 hover:bg-green-200 text-green-800 px-3 md:px-4 py-2 rounded-full transition-colors border border-green-200">
+                                        <div class="bg-green-600 text-white p-1 rounded-full text-xs w-6 h-6 flex items-center justify-center"><i class="fas fa-user"></i></div>
+                                        <span class="text-sm font-medium hidden md:block max-w-[150px] truncate">${currentUser.name}</span>
+                                    </button>
+                                    <!-- Tombol Keluar -->
+                                    <button onclick="logout()" class="flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-2 rounded-md transition-colors border border-red-200" title="Keluar">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        <span class="text-sm font-medium hidden sm:block">Keluar</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <div class="flex flex-1 overflow-hidden relative w-full">
+                        <!-- SIDEBAR KIRI -->
+                        <aside id="sidebar" class="${sidebarClass}">
+                            <div class="p-3 space-y-2 mt-2" id="sidebar-menu">
+                                <!-- Menu Diisi oleh fungsi renderSidebarMenu -->
+                            </div>
+                        </aside>
+
+                        <!-- KONTEN UTAMA KANAN -->
+                        <main class="flex-1 overflow-y-auto p-4 md:p-6 w-full" id="main-content">
+                            <!-- Diisi oleh fungsi renderContent -->
+                        </main>
+                        
+                        <!-- Overlay Hitam Transparan untuk Mobile saat sidebar terbuka -->
+                        ${isSidebarOpen ? `<div class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30" onclick="toggleSidebar()"></div>` : ''}
+                    </div>
+                </div>
+            `;
+            renderSidebarMenu();
+            renderContent();
+        }
+
+        // --- Render Isi Sidebar ---
+        function renderSidebarMenu() {
+            const menu = document.getElementById('sidebar-menu');
+            // Jika sidebar minimize, icon di tengah. Jika maximize, rata kiri.
+            const alignClass = isSidebarOpen ? 'justify-start' : 'justify-center';
+            const mrClass = isSidebarOpen ? 'mr-3' : 'md:mr-0';
+            const textClass = isSidebarOpen ? 'block' : 'hidden'; // Sembunyikan teks kalau minimize
+            
+            let html = `
+                <!-- Menu Beranda -->
+                <button onclick="changeTab('dashboard')" class="w-full flex items-center p-3 rounded ${activeTab === 'dashboard' ? 'bg-green-100 text-green-800 font-semibold' : 'text-gray-600 hover:bg-gray-100'} ${alignClass}" title="Beranda">
+                    <i class="fas fa-home w-5 ${mrClass}"></i>
+                    <span class="sidebar-text ${textClass} whitespace-nowrap">Beranda</span>
+                </button>
+            `;
+
+            // Label Menu Kelas Disesuaikan Peran
+            const coursesLabel = currentUser.role === 'admin' ? 'Semua Kelas' : currentUser.role === 'dosen' ? 'Kelola Kelas' : 'Kelas Saya';
+            html += `
+                <!-- Menu Kelas -->
+                <button onclick="changeTab('courses')" class="w-full flex items-center p-3 rounded ${activeTab === 'courses' ? 'bg-green-100 text-green-800 font-semibold' : 'text-gray-600 hover:bg-gray-100'} ${alignClass}" title="${coursesLabel}">
+                    <i class="fas fa-chalkboard-teacher w-5 ${mrClass}"></i>
+                    <span class="sidebar-text ${textClass} whitespace-nowrap">${coursesLabel}</span>
+                </button>
+            `;
+
+            // Menu Khusus Admin
+            if (currentUser.role === 'admin') {
+                html += `
+                    <!-- Menu Kelola Pengguna -->
+                    <button onclick="changeTab('manage-users')" class="w-full flex items-center p-3 rounded ${activeTab === 'manage-users' ? 'bg-purple-100 text-purple-800 font-semibold' : 'text-gray-600 hover:bg-gray-100'} ${alignClass} mt-4 border-t border-gray-200" title="Kelola Pengguna">
+                        <i class="fas fa-users-cog w-5 text-purple-600 ${mrClass}"></i>
+                        <span class="sidebar-text ${textClass} whitespace-nowrap">Kelola Pengguna</span>
+                    </button>
+                    <!-- Menu Log Sistem -->
+                    <button onclick="changeTab('system-logs')" class="w-full flex items-center p-3 rounded ${activeTab === 'system-logs' ? 'bg-gray-800 text-white font-semibold' : 'text-gray-600 hover:bg-gray-100'} ${alignClass}" title="Log Sistem">
+                        <i class="fas fa-clipboard-list w-5 ${activeTab === 'system-logs' ? 'text-gray-300' : 'text-gray-500'} ${mrClass}"></i>
+                        <span class="sidebar-text ${textClass} whitespace-nowrap">Log Sistem</span>
+                    </button>
+                `;
+            }
+            menu.innerHTML = html;
+        }
+
+        // ==============================================================================
+        // 5. ROUTER (PENGATUR TAMPILAN KONTEN)
+        // ==============================================================================
+        function renderContent() {
+            if(clockInterval) { clearInterval(clockInterval); clockInterval = null; }
+
+            const main = document.getElementById('main-content');
+            main.innerHTML = '<div class="max-w-5xl mx-auto w-full" id="content-inner"></div>';
+            const inner = document.getElementById('content-inner');
+
+            if (activeTab === 'profile') {
+                inner.innerHTML = getProfileHTML();
+                attachProfileEvents();
+            } else if (activeTab === 'dashboard' && !selectedCourse) {
+                inner.innerHTML = getDashboardHTML();
+            } else if (activeTab === 'manage-users' && currentUser.role === 'admin') {
+                inner.innerHTML = getManageUsersHTML();
+                attachManageUsersEvents();
+                attachResetPasswordEvents();
+            } else if (activeTab === 'system-logs' && currentUser.role === 'admin') {
+                inner.innerHTML = getSystemLogsHTML();
+                initClock();
+            } else if (activeTab === 'courses' && !selectedCourse) {
+                if (dosenEditingCourse) inner.innerHTML = getDosenCourseFormHTML();
+                else inner.innerHTML = getCoursesHTML();
+            } else if (selectedCourse) {
+                // Tampilan Detail Kelas (Materi & Kuis)
+                if (takingQuizId) inner.innerHTML = getQuizTakerHTML();
+                else if (isEditingQuiz) inner.innerHTML = getQuizEditorHTML();
+                else inner.innerHTML = getCourseDetailHTML();
+            }
+        }
+
+        // ==============================================================================
+        // 6. MENU BERANDA (DASHBOARD)
+        // ==============================================================================
+        function getDashboardHTML() {
+            const totalMateri = courses.reduce((acc, curr) => acc + curr.modules.length, 0);
+            return `
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Selamat Datang, <span class="text-green-700">${currentUser.name}</span></h2>
+                
+                <!-- Kotak Informasi -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
+                        <div class="flex items-center">
+                            <div class="p-3 bg-blue-100 rounded-full mr-4"><i class="fas fa-book text-blue-600 text-xl"></i></div>
+                            <div><p class="text-sm text-gray-500 font-medium">Total Kelas</p><p class="text-2xl font-bold text-gray-800">${courses.length}</p></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
+                        <div class="flex items-center">
+                            <div class="p-3 bg-green-100 rounded-full mr-4"><i class="fas fa-file-alt text-green-600 text-xl"></i></div>
+                            <div><p class="text-sm text-gray-500 font-medium">Total Materi</p><p class="text-2xl font-bold text-gray-800">${totalMateri}</p></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
+                        <div class="flex items-center">
+                            <div class="p-3 bg-purple-100 rounded-full mr-4"><i class="fas fa-users text-purple-600 text-xl"></i></div>
+                            <div><p class="text-sm text-gray-500 font-medium">Pengguna</p><p class="text-2xl font-bold text-gray-800">${users.length}</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pengumuman -->
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-yellow-800 mb-2"><i class="fas fa-bullhorn mr-2"></i>Pengumuman Kampus</h3>
+                    <p class="text-yellow-700">Pemberitahuan: Fitur ujian dan kuis untuk Dosen kini telah diaktifkan. Mahasiswa wajib memperhatikan jadwal kuis pada masing-masing kelas.</p>
+                </div>
+            `;
+        }
+
+        // ==============================================================================
+        // 7. MENU PROFIL PENGGUNA
+        // ==============================================================================
+        function getProfileHTML() {
+            let msgHtml = '';
+            if (profileSuccessMsg) {
+                msgHtml = `<div class="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg shadow-sm"><i class="fas fa-check-circle mr-2"></i> ${profileSuccessMsg}</div>`;
+                setTimeout(() => { profileSuccessMsg = ''; renderContent(); }, 4000);
+            }
+
+            const isAdmin = currentUser.role === 'admin';
+            const isMhs = currentUser.role === 'mahasiswa';
+            const isDosen = currentUser.role === 'dosen';
+            const readOnly = isMhs || isDosen; 
+            
+            const idLabel = isMhs ? 'NIM' : 'NIP';
+            const depLabel = isMhs ? 'Program Studi' : 'Departemen/Jabatan';
+            const depValue = isMhs ? (currentUser.major || '') : (currentUser.department || '');
+
+            let formFieldsHtml = '';
+
+            // --- Formulir Khusus Admin (Dipersingkat) ---
+            if (isAdmin) {
+                formFieldsHtml = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div><label class="block text-sm font-medium mb-1">Username</label><input type="text" value="${currentUser.username}" class="w-full p-2 border bg-gray-50 rounded text-gray-500" disabled></div>
+                        <div><label class="block text-sm font-medium mb-1">Nama Lengkap</label><input type="text" id="p-name" value="${currentUser.name}" class="w-full p-2 border rounded focus:ring-1 focus:ring-green-500" required></div>
+                        <div class="md:col-span-2 pt-2 border-t mt-2">
+                            <label class="block text-sm font-medium mb-1"><i class="fas fa-lock mr-1 text-gray-500"></i> Ubah Password (Opsional)</label>
+                            <input type="password" id="p-pass" placeholder="Biarkan kosong jika tidak ingin mengubah password" class="w-full p-2 border rounded focus:ring-1 focus:ring-green-500">
+                        </div>
+                    </div>
+                `;
+            } 
+            // --- Formulir Khusus Dosen & Mahasiswa ---
+            else {
+                formFieldsHtml = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div><label class="block text-sm font-medium mb-1">Nama Lengkap</label><input type="text" id="p-name" value="${currentUser.name}" class="w-full p-2 border rounded bg-gray-50 text-gray-500" disabled></div>
+                        <div><label class="block text-sm font-medium mb-1">Username</label><input type="text" value="${currentUser.username}" class="w-full p-2 border bg-gray-50 rounded text-gray-500" disabled></div>
+                        <div><label class="block text-sm font-medium mb-1">${idLabel}</label><input type="text" id="p-nip" value="${currentUser.nip || ''}" class="w-full p-2 border rounded bg-gray-50 text-gray-500" disabled></div>
+                        <div><label class="block text-sm font-medium mb-1">${depLabel}</label><input type="text" id="p-dep" value="${depValue}" class="w-full p-2 border rounded bg-gray-50 text-gray-500" disabled></div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Email</label>
+                            <input type="email" id="p-email" value="${currentUser.email || ''}" class="w-full p-2 border rounded focus:ring-1 focus:ring-green-500" ${isMhs ? 'pattern=".*@mhs\\.sriwigama\\.ac\\.id$" title="Harus berdomain @mhs.sriwigama.ac.id"' : 'pattern=".*@sriwigama\\.ac\\.id$" title="Harus berdomain @sriwigama.ac.id"'} required>
+                            <p class="text-xs text-gray-500 mt-1">Gunakan email berdomain ${isMhs ? '@mhs.sriwigama.ac.id' : '@sriwigama.ac.id'}</p>
+                        </div>
+                        <div><label class="block text-sm font-medium mb-1">Nomor Handphone</label><input type="text" id="p-phone" value="${currentUser.phone || ''}" class="w-full p-2 border rounded focus:ring-1 focus:ring-green-500"></div>
+                        
+                        <div class="md:col-span-2 pt-2 border-t mt-2">
+                            <label class="block text-sm font-medium mb-1"><i class="fas fa-lock mr-1 text-gray-500"></i> Ubah Password (Opsional)</label>
+                            <input type="password" id="p-pass" placeholder="Biarkan kosong jika tidak ingin mengubah password" class="w-full p-2 border rounded focus:ring-1 focus:ring-green-500">
+                        </div>
+
+                        <!-- Catatan Peringatan -->
+                        <div class="col-span-1 md:col-span-2 mt-2 text-yellow-800 bg-yellow-50 p-4 rounded-lg text-sm flex items-start border border-yellow-300 shadow-sm">
+                            <i class="fas fa-exclamation-triangle mt-0.5 mr-3 text-yellow-600 text-lg"></i> 
+                            <span><strong>Catatan Penting:</strong> Untuk melakukan perubahan data pada Nama Lengkap, ${idLabel}, Username, dan ${depLabel} hanya bisa dilakukan dengan pengisian formulir fisik yang diajukan melalui Admin secara langsung.</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">Pengaturan Akun & Profil</h2>
+                    ${msgHtml}
+                    
+                    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+                        <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-user-edit mr-2 text-green-600"></i> Informasi Data Diri</h3>
+                        <form id="profile-form" class="space-y-5">
+                            ${formFieldsHtml}
+                            <div class="pt-4 flex flex-wrap gap-3">
+                                <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 shadow-sm"><i class="fas fa-save mr-2"></i> Simpan Perubahan</button>
+                                <button type="button" onclick="changeTab('dashboard')" class="border border-gray-300 bg-white px-6 py-2 rounded-md hover:bg-gray-50"><i class="fas fa-times mr-2"></i> Batal</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Riwayat Akses -->
+                    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+                        <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-history mr-2 text-blue-600"></i> Riwayat Aktivitas Akun</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-blue-50 border border-blue-100 p-4 rounded-lg">
+                                <p class="text-xs text-blue-500 font-semibold mb-1 uppercase">First Access to Site</p>
+                                <p class="font-medium text-gray-800 text-sm">${currentUser.firstAccess}</p>
+                            </div>
+                            <div class="bg-green-50 border border-green-100 p-4 rounded-lg">
+                                <p class="text-xs text-green-500 font-semibold mb-1 uppercase">Last Access to Site</p>
+                                <p class="font-medium text-gray-800 text-sm">${currentUser.lastAccess}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==============================================================================
+        // 8. MENU KELOLA PENGGUNA (ADMIN ONLY) & EKSPOR EXCEL
+        // ==============================================================================
+        function getManageUsersHTML() {
+            let html = `
+                <div class="bg-white rounded-lg shadow-sm border p-4 md:p-6 w-full overflow-hidden">
+                    <div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4 border-b pb-4">
+                        <h2 class="text-xl md:text-2xl font-bold text-gray-800 flex items-center"><i class="fas fa-users-cog text-purple-600 mr-2"></i> Manajemen Pengguna</h2>
+                        <div class="flex flex-wrap gap-2">
+                            <!-- Tombol Ekspor Excel Sesungguhnya -->
+                            <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm shadow-sm flex items-center"><i class="fas fa-file-excel mr-2"></i> Export Data (Excel)</button>
+                            <button onclick="adminEditingUser='NEW'; renderContent();" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm shadow-sm flex items-center"><i class="fas fa-user-plus mr-2"></i> Tambah Baru</button>
+                        </div>
+                    </div>
+            `;
+
+            // Tampilan Form Edit/Tambah Pengguna
+            if (adminEditingUser) {
+                const isNew = adminEditingUser === 'NEW';
+                const u = isNew ? { role: 'mahasiswa', name: '', username: '' } : users.find(x => x.id === adminEditingUser);
+                
+                html += `
+                    <div class="bg-gray-50 p-4 md:p-6 rounded-lg border mb-6 shadow-sm border-l-4 border-purple-500">
+                        <h3 class="text-lg font-bold mb-4">${isNew ? 'Tambah Pengguna Baru' : 'Edit Data: ' + u.name}</h3>
+                        <form id="admin-user-form" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label class="text-sm font-medium">Peran</label>
+                                    <select id="au-role" class="w-full p-2 border rounded bg-white focus:ring-1 focus:ring-purple-500" onchange="updateAdminFormFields(this.value)">
+                                        <option value="mahasiswa" ${u.role==='mahasiswa'?'selected':''}>Mahasiswa</option>
+                                        <option value="dosen" ${u.role==='dosen'?'selected':''}>Dosen</option>
+                                        <option value="admin" ${u.role==='admin'?'selected':''}>Administrator</option>
+                                    </select>
+                                </div>
+                                <div><label class="text-sm font-medium">Nama Lengkap</label><input type="text" id="au-name" value="${u.name}" class="w-full p-2 border rounded" required></div>
+                                ${isNew ? `
+                                    <div><label class="text-sm font-medium">Username login</label><input type="text" id="au-user" class="w-full p-2 border rounded" required></div>
+                                    <div><label class="text-sm font-medium">Password sementara</label><input type="text" id="au-pass" value="password123" class="w-full p-2 border rounded bg-gray-100" readonly></div>
+                                ` : ''}
+                            </div>
+                            <div id="dynamic-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t mt-4"></div>
+                            <div class="flex gap-2 pt-4">
+                                <button type="submit" class="bg-purple-600 text-white px-5 py-2 rounded shadow-sm hover:bg-purple-700"><i class="fas fa-save mr-1"></i> Simpan</button>
+                                <button type="button" onclick="adminEditingUser=null; renderContent();" class="border px-5 py-2 rounded hover:bg-gray-50 bg-white">Batal</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                setTimeout(() => updateAdminFormFields(u.role, u), 0);
+            } 
+            // Tampilan Form Reset Password
+            else if (adminResettingUser) {
+                const u = users.find(x => x.id === adminResettingUser);
+                html += `
+                    <div class="bg-orange-50 p-4 md:p-6 rounded-lg border mb-6 shadow-sm border-l-4 border-orange-500">
+                        <h3 class="text-lg font-bold mb-4 text-orange-800"><i class="fas fa-key mr-2"></i> Reset Password: ${u.name}</h3>
+                        <form id="admin-reset-form" class="space-y-4">
+                            <div>
+                                <label class="text-sm font-medium block mb-1 text-gray-700">Password Baru</label>
+                                <input type="text" id="ar-pass" value="password123" class="w-full md:w-1/2 p-2 border rounded focus:ring-1 focus:ring-orange-500 bg-white" required>
+                            </div>
+                            <div class="bg-white p-4 border border-orange-200 rounded-lg">
+                                <label class="text-sm font-medium block mb-2 text-gray-800"><i class="fas fa-file-upload mr-1 text-orange-600"></i> Upload Bukti Permintaan (Wajib)</label>
+                                <input type="file" id="ar-file" accept="image/*,.pdf" class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700" required>
+                            </div>
+                            <div class="flex gap-2 pt-4">
+                                <button type="submit" class="bg-orange-600 text-white px-5 py-2 rounded shadow-sm hover:bg-orange-700">Proses Reset</button>
+                                <button type="button" onclick="adminResettingUser=null; renderContent();" class="border px-5 py-2 rounded bg-white">Batal</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+            } 
+            // Tampilan Tabel (Responsif via overflow-x-auto)
+            else {
+                html += `
+                    <div class="overflow-x-auto rounded border no-scrollbar">
+                        <table class="min-w-full text-left border-collapse bg-white whitespace-nowrap">
+                            <thead>
+                                <tr class="bg-gray-100 border-b">
+                                    <th class="p-3 text-sm font-semibold">Nama</th><th class="p-3 text-sm font-semibold">Username</th><th class="p-3 text-sm font-semibold">Peran</th><th class="p-3 text-sm font-semibold">Info</th><th class="p-3 text-sm font-semibold text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${users.map(u => {
+                                    let proofBtn = u.resetFormUrl ? `<button onclick="window.open('${u.resetFormUrl}', '_blank')" class="text-orange-600 bg-orange-50 hover:bg-orange-100 p-2 rounded mx-1 text-xs" title="Bukti Reset"><i class="fas fa-file-contract mr-1"></i></button>` : '';
+                                    return `
+                                    <tr class="border-b hover:bg-gray-50 transition-colors">
+                                        <td class="p-3 text-sm font-medium">${u.name}</td>
+                                        <td class="p-3 text-sm text-gray-500">@${u.username}</td>
+                                        <td class="p-3 text-sm"><span class="px-2 py-1 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-red-100 text-red-700' : u.role === 'dosen' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">${u.role.toUpperCase()}</span></td>
+                                        <td class="p-3 text-sm text-gray-600">${u.role === 'mahasiswa' ? `Smt: ${u.semester||'-'} | ${u.major||'-'}` : u.role === 'dosen' ? u.department||'-' : '-'}</td>
+                                        <td class="p-3 text-sm text-center">
+                                            <button onclick="adminEditingUser='${u.id}'; renderContent();" class="text-indigo-600 bg-indigo-50 p-2 rounded mx-1" title="Edit"><i class="fas fa-edit"></i></button>
+                                            <button onclick="adminResettingUser='${u.id}'; renderContent();" class="text-orange-600 bg-orange-50 p-2 rounded mx-1" title="Reset Password" ${u.id === currentUser.id ? 'disabled opacity-50' : ''}><i class="fas fa-key"></i></button>
+                                            <button onclick="deleteUser('${u.id}')" class="text-red-600 bg-red-50 p-2 rounded mx-1" title="Hapus" ${u.id === currentUser.id ? 'disabled opacity-50' : ''}><i class="fas fa-trash"></i></button>
+                                            ${proofBtn}
+                                        </td>
+                                    </tr>
+                                    `
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            return html;
+        }
+
+        // ==============================================================================
+        // 9. MENU DAFTAR KELAS & MATERI
+        // ==============================================================================
+        function getCoursesHTML() {
+            let topBar = `<div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4"><h2 class="text-2xl font-bold text-gray-800">Daftar Mata Kuliah</h2>`;
+            if (currentUser.role === 'dosen') {
+                topBar += `<button onclick="dosenEditingCourse='NEW'; renderContent();" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm w-fit"><i class="fas fa-plus mr-2"></i> Tambah Kelas</button>`;
+            }
+            topBar += `</div>`;
+
+            let html = topBar + '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
+            
+            courses.forEach(course => {
+                const isEnrolled = course.enrolled.includes(currentUser.id);
+                const isMyCourse = course.lecturerId === currentUser.id;
+                
+                // Filter: Dosen hanya lihat kelasnya, Mahasiswa hanya lihat yg diikutinya jika tab 'kelas saya' (karena di sini gabung, biar admin/semua tampil)
+                if (currentUser.role === 'dosen' && !isMyCourse) return;
+                
+                const lecturer = users.find(u => u.id === course.lecturerId);
+                const totalMateri = course.modules ? course.modules.length : 0;
+                const totalKuis = course.quizzes ? course.quizzes.length : 0;
+                
+                let btnHtml = '';
+                if (currentUser.role === 'mahasiswa' && !isEnrolled) {
+                    btnHtml = `<button onclick="enrollCourse('${course.id}')" class="text-sm bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1 rounded font-medium">Daftar Kelas</button>`;
+                } else {
+                    const btnText = currentUser.role === 'dosen' ? 'Kelola Materi & Kuis' : currentUser.role === 'admin' ? 'Pantau Kelas' : 'Masuk Kelas';
+                    btnHtml = `<button onclick="openCourse('${course.id}')" class="text-sm bg-green-50 text-green-600 hover:bg-green-100 px-3 py-1 rounded font-medium flex items-center">${btnText} <i class="fas fa-chevron-right ml-1 text-xs"></i></button>`;
+                }
+
+                let dosenActions = '';
+                if (currentUser.role === 'dosen' && isMyCourse) {
+                    dosenActions = `
+                        <div class="absolute top-2 right-2 flex space-x-1 z-10">
+                            <button onclick="dosenEditingCourse='${course.id}'; renderContent();" class="bg-white/90 text-blue-600 p-2 rounded shadow hover:bg-white text-xs"><i class="fas fa-edit"></i></button>
+                            <button onclick="deleteCourse('${course.id}')" class="bg-white/90 text-red-600 p-2 rounded shadow hover:bg-white text-xs"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `;
+                }
+
+                html += `
+                    <div class="bg-white rounded-lg shadow border border-gray-100 overflow-hidden relative group transition hover:shadow-md">
+                        ${dosenActions}
+                        ${currentUser.role === 'admin' ? `<div class="absolute top-2 left-2 bg-purple-600 text-white text-xs px-2 py-1 rounded shadow-sm z-10">Admin</div>` : ''}
+                        <div class="h-32 bg-green-600 flex items-center justify-center">
+                            <i class="fas fa-chalkboard text-4xl text-white opacity-50"></i>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-bold text-lg text-gray-800 mb-1 truncate">${course.title}</h3>
+                            <p class="text-sm text-gray-500 mb-4">${course.department} &bull; ${lecturer ? lecturer.name : '-'}</p>
+                            <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
+                                <span class="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded">${totalMateri} Materi | ${totalKuis} Kuis</span>
+                                ${btnHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            return html;
+        }
+
+        // --- Tampilan Dalam Kelas (Detail Kelas) ---
+        function getCourseDetailHTML() {
+            const lecturer = users.find(u => u.id === selectedCourse.lecturerId);
+            const isMyCourse = currentUser.role === 'dosen' && currentUser.id === selectedCourse.lecturerId;
+
+            let html = `
+                <button onclick="closeCourse()" class="mb-4 text-green-600 hover:text-green-800 font-medium flex items-center text-sm">
+                    <i class="fas fa-arrow-left mr-2"></i> Kembali ke Daftar Kelas
+                </button>
+                <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">${selectedCourse.title}</h2>
+                    <p class="text-gray-600">Dosen Pengampu: ${lecturer ? lecturer.name : '-'}</p>
+                </div>
+            `;
+
+            // Menu Materi
+            let addModBtn = isMyCourse ? `<button onclick="addModule()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm shadow-sm"><i class="fas fa-cloud-upload-alt mr-1"></i> Upload File / Materi</button>` : '';
+            html += `<div class="flex flex-wrap justify-between items-center mb-4 gap-2"><h3 class="text-xl font-bold text-gray-800"><i class="fas fa-book-open mr-2 text-green-600"></i> Materi Pembelajaran</h3>${addModBtn}</div><div class="space-y-4 mb-8">`;
+            
+            // Loop Materi
+            if (!selectedCourse.modules || selectedCourse.modules.length === 0) {
+                html += `<div class="bg-white rounded border p-8 text-center text-gray-500 border-dashed border-2">Belum ada materi.</div>`;
+            } else {
+                selectedCourse.modules.forEach(mod => {
+                    // Cek jika sedang diedit
+                    if (editingModule === mod.id) {
+                        html += `
+                            <div class="bg-white rounded border p-5 border-l-4 border-blue-500 shadow-md">
+                                <input type="text" id="edit-mod-title" value="${mod.title}" class="w-full text-lg p-2 border rounded outline-none mb-3">
+                                <textarea id="edit-mod-content" class="w-full p-2 border rounded outline-none min-h-[100px] mb-3">${mod.content}</textarea>
+                                <div class="flex justify-end gap-2 pt-3"><button onclick="editingModule=null; renderContent();" class="px-4 py-2 border rounded text-sm">Batal</button><button onclick="saveModule('${mod.id}')" class="px-4 py-2 bg-blue-600 text-white rounded text-sm">Simpan</button></div>
+                            </div>`;
+                    } else {
+                        let actions = isMyCourse ? `<button onclick="editingModule='${mod.id}'; renderContent();" class="text-blue-600 px-2 text-sm"><i class="fas fa-edit"></i></button><button onclick="deleteModule('${mod.id}')" class="text-red-600 px-2 text-sm"><i class="fas fa-trash"></i></button>` : '';
+                        html += `
+                            <div class="bg-white rounded-lg border shadow-sm"><div class="bg-gray-50 p-4 border-b flex justify-between">
+                            <h4 class="font-bold text-gray-800"><i class="fas fa-folder text-green-600 mr-2"></i>${mod.title}</h4><div>${actions}</div></div>
+                            <div class="p-5 text-sm text-gray-700 whitespace-pre-wrap">${mod.content}</div></div>`;
+                    }
+                });
+            }
+            html += `</div>`;
+
+            // =======================================================
+            // BAGIAN KUIS / UJIAN
+            // =======================================================
+            let addQuizBtn = isMyCourse ? `<button onclick="createNewQuiz()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm shadow-sm"><i class="fas fa-plus mr-1"></i> Buat Kuis Baru</button>` : '';
+            html += `<div class="flex flex-wrap justify-between items-center mb-4 gap-2"><h3 class="text-xl font-bold text-gray-800"><i class="fas fa-tasks mr-2 text-purple-600"></i> Evaluasi & Kuis</h3>${addQuizBtn}</div><div class="space-y-4">`;
+
+            if (!selectedCourse.quizzes || selectedCourse.quizzes.length === 0) {
+                html += `<div class="bg-white rounded border p-8 text-center text-gray-500 border-dashed border-2">Belum ada kuis/ujian tersedia.</div>`;
+            } else {
+                selectedCourse.quizzes.forEach(quiz => {
+                    let score = (selectedCourse.quizScores && selectedCourse.quizScores[quiz.id] && selectedCourse.quizScores[quiz.id][currentUser.id]) 
+                                ? selectedCourse.quizScores[quiz.id][currentUser.id] : null;
+
+                    let qActions = '';
+                    if (isMyCourse) {
+                        qActions = `<button onclick="editQuiz('${quiz.id}')" class="text-blue-600 px-2 text-sm"><i class="fas fa-edit"></i> Edit</button>
+                                    <button onclick="deleteQuiz('${quiz.id}')" class="text-red-600 px-2 text-sm"><i class="fas fa-trash"></i> Hapus</button>`;
+                    } else if (currentUser.role === 'mahasiswa') {
+                        if (score !== null) {
+                            qActions = `<span class="bg-green-100 text-green-800 px-3 py-1 rounded font-bold text-sm">Nilai: ${score}/100</span>`;
+                        } else {
+                            qActions = `<button onclick="takeQuiz('${quiz.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm shadow-sm"><i class="fas fa-pencil-alt mr-1"></i> Kerjakan Kuis</button>`;
+                        }
+                    }
+
+                    html += `
+                        <div class="bg-white rounded-lg border shadow-sm p-4 flex justify-between items-center">
+                            <div><h4 class="font-bold text-gray-800">${quiz.title}</h4><p class="text-xs text-gray-500">${quiz.questions.length} Pertanyaan Pilihan Ganda</p></div>
+                            <div class="flex items-center gap-2">${qActions}</div>
+                        </div>`;
+                });
+            }
+            html += `</div>`;
+
+            return html;
+        }
+
+        // ==============================================================================
+        // 10. FITUR KUIS (FORM EDITOR UNTUK DOSEN)
+        // ==============================================================================
+        function createNewQuiz() {
+            currentQuizData = { id: 'q' + Date.now(), title: 'Kuis Baru', questions: [] };
+            isEditingQuiz = true;
+            renderContent();
+        }
+
+        function editQuiz(quizId) {
+            const qz = selectedCourse.quizzes.find(q => q.id === quizId);
+            currentQuizData = JSON.parse(JSON.stringify(qz)); // Clone data agar tidak langsung merubah state
+            isEditingQuiz = true;
+            renderContent();
+        }
+
+        function getQuizEditorHTML() {
+            let html = `
+                <div class="bg-white p-6 rounded-lg shadow border">
+                    <h2 class="text-xl font-bold mb-4">Formulir Pembuatan Kuis</h2>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium mb-1">Judul Kuis</label>
+                        <input type="text" id="quiz-title-input" value="${currentQuizData.title}" class="w-full p-2 border rounded focus:ring-1 focus:ring-purple-500" placeholder="Misal: Ujian Tengah Semester">
+                    </div>
+                    <div id="quiz-questions-container" class="space-y-6">
+            `;
+
+            if (currentQuizData.questions.length === 0) {
+                html += `<div class="text-center p-6 text-gray-400 border-2 border-dashed rounded">Belum ada pertanyaan. Klik tombol di bawah untuk menambah.</div>`;
+            } else {
+                currentQuizData.questions.forEach((q, idx) => {
+                    html += `
+                    <div class="p-4 border border-gray-200 rounded bg-gray-50 relative">
+                        <button onclick="removeQuestion(${idx})" class="absolute top-2 right-2 text-red-500 hover:text-red-700" title="Hapus Soal"><i class="fas fa-times"></i></button>
+                        <label class="font-semibold text-sm mb-2 block">Soal #${idx + 1}</label>
+                        <input type="text" id="q-text-${idx}" value="${q.q}" class="w-full p-2 border rounded mb-3" placeholder="Masukkan pertanyaan...">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${[0,1,2,3].map(optIdx => `
+                                <div class="flex items-center bg-white p-2 border rounded">
+                                    <input type="radio" name="q-ans-${idx}" value="${optIdx}" ${q.answer === optIdx ? 'checked' : ''} class="mr-2">
+                                    <input type="text" id="q-opt-${idx}-${optIdx}" value="${q.options[optIdx] || ''}" class="w-full text-sm outline-none" placeholder="Opsi ${String.fromCharCode(65+optIdx)}">
+                                </div>
+                            `).join('')}
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">* Pilih radio button pada opsi yang merupakan jawaban benar.</p>
+                    </div>`;
+                });
+            }
+
+            html += `
+                    </div>
+                    <div class="mt-6 flex flex-wrap gap-2">
+                        <button onclick="addQuestion()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 text-sm"><i class="fas fa-plus mr-1"></i> Tambah Pertanyaan</button>
+                        <button onclick="saveQuizData()" class="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700 text-sm shadow"><i class="fas fa-save mr-1"></i> Simpan Kuis</button>
+                        <button onclick="isEditingQuiz=false; renderContent();" class="border px-4 py-2 rounded hover:bg-gray-50 text-sm">Batal</button>
+                    </div>
+                </div>
+            `;
+            return html;
+        }
+
+        function addQuestion() {
+            syncQuizInputs(); // Ambil inputan saat ini sebelum render ulang
+            currentQuizData.questions.push({ q: '', options: ['','','',''], answer: 0 });
+            renderContent();
+        }
+
+        function removeQuestion(idx) {
+            syncQuizInputs();
+            currentQuizData.questions.splice(idx, 1);
+            renderContent();
+        }
+
+        function syncQuizInputs() {
+            currentQuizData.title = document.getElementById('quiz-title-input').value;
+            currentQuizData.questions.forEach((q, idx) => {
+                const qEl = document.getElementById(`q-text-${idx}`);
+                if (qEl) {
+                    q.q = qEl.value;
+                    for (let i=0; i<4; i++) { q.options[i] = document.getElementById(`q-opt-${idx}-${i}`).value; }
+                    const ansEl = document.querySelector(`input[name="q-ans-${idx}"]:checked`);
+                    if (ansEl) q.answer = parseInt(ansEl.value);
+                }
+            });
+        }
+
+        function saveQuizData() {
+            syncQuizInputs();
+            if (!selectedCourse.quizzes) selectedCourse.quizzes = [];
+            const idx = selectedCourse.quizzes.findIndex(q => q.id === currentQuizData.id);
+            if (idx >= 0) selectedCourse.quizzes[idx] = currentQuizData;
+            else selectedCourse.quizzes.push(currentQuizData);
+            
+            isEditingQuiz = false;
+            renderContent();
+        }
+
+        function deleteQuiz(quizId) {
+            if(confirm('Hapus kuis ini? Semua data nilai mahasiswa untuk kuis ini juga akan hilang.')) {
+                selectedCourse.quizzes = selectedCourse.quizzes.filter(q => q.id !== quizId);
+                renderContent();
+            }
+        }
+
+        // ==============================================================================
+        // 11. FITUR MAHASISWA MENGERJAKAN KUIS
+        // ==============================================================================
+        function takeQuiz(quizId) {
+            takingQuizId = quizId;
+            renderContent();
+        }
+
+        function getQuizTakerHTML() {
+            const quiz = selectedCourse.quizzes.find(q => q.id === takingQuizId);
+            let html = `
+                <div class="bg-white p-6 md:p-8 rounded-lg shadow-lg border max-w-3xl mx-auto">
+                    <h2 class="text-2xl font-bold mb-2">${quiz.title}</h2>
+                    <p class="text-sm text-gray-500 mb-6 border-b pb-4">Mata Kuliah: ${selectedCourse.title} <br> Pastikan koneksi stabil. Jangan refresh halaman saat mengerjakan.</p>
+                    <form id="quiz-take-form" class="space-y-6">
+            `;
+
+            quiz.questions.forEach((q, idx) => {
+                html += `
+                    <div class="mb-4">
+                        <p class="font-medium text-gray-800 mb-3">${idx + 1}. ${q.q}</p>
+                        <div class="space-y-2 pl-4">
+                            ${q.options.map((opt, optIdx) => `
+                                <label class="flex items-center cursor-pointer p-2 rounded hover:bg-green-50 border border-transparent hover:border-green-200 transition">
+                                    <input type="radio" name="take-ans-${idx}" value="${optIdx}" class="mr-3" required>
+                                    <span class="text-sm">${opt}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                        <div class="pt-6 border-t flex gap-3">
+                            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 shadow font-semibold">Kirim Jawaban</button>
+                            <button type="button" onclick="takingQuizId=null; renderContent();" class="border px-4 py-2 rounded hover:bg-gray-50">Batal (Kembali)</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            // Timeout needed because elements are injected as string
+            setTimeout(() => {
+                document.getElementById('quiz-take-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    let correctCount = 0;
+                    quiz.questions.forEach((q, idx) => {
+                        const ansEl = document.querySelector(`input[name="take-ans-${idx}"]:checked`);
+                        if (ansEl && parseInt(ansEl.value) === q.answer) {
+                            correctCount++;
+                        }
+                    });
+                    
+                    const score = Math.round((correctCount / quiz.questions.length) * 100);
+                    if (!selectedCourse.quizScores) selectedCourse.quizScores = {};
+                    if (!selectedCourse.quizScores[quiz.id]) selectedCourse.quizScores[quiz.id] = {};
+                    
+                    selectedCourse.quizScores[quiz.id][currentUser.id] = score;
+                    
+                    alert(`Kuis selesai! Nilai Anda: ${score}`);
+                    takingQuizId = null;
+                    renderContent();
+                });
+            }, 0);
+
+            return html;
+        }
+
+        // ==============================================================================
+        // 12. FUNGSI LOGIKA EVENT LAINNYA
+        // ==============================================================================
+        
+        // --- Form Profil & Form Kelas ---
+        function attachProfileEvents() {
+            const form = document.getElementById('profile-form');
+            if(form) form.addEventListener('submit', handleProfileSubmit);
+        }
+
+        function handleProfileSubmit(e) {
+            e.preventDefault();
+            // Validasi Khusus Admin
+            if (currentUser.role === 'admin') {
+                currentUser.name = document.getElementById('p-name').value;
+            } else {
+                // Mahasiswa & Dosen Validasi
+                const emailVal = document.getElementById('p-email').value;
+                if (currentUser.role === 'mahasiswa' && emailVal && !emailVal.endsWith('@mhs.sriwigama.ac.id')) {
+                    return alert('Email mahasiswa harus menggunakan domain @mhs.sriwigama.ac.id');
+                } else if (currentUser.role === 'dosen' && emailVal && !emailVal.endsWith('@sriwigama.ac.id')) {
+                    return alert('Email dosen harus menggunakan domain @sriwigama.ac.id');
+                }
+                currentUser.email = emailVal;
+                currentUser.phone = document.getElementById('p-phone').value;
+            }
+
+            // Password
+            const newPass = document.getElementById('p-pass').value;
+            if(newPass && newPass.trim() !== '') currentUser.password = newPass;
+            
+            const idx = users.findIndex(u => u.id === currentUser.id);
+            if(idx !== -1) users[idx] = currentUser;
+
+            addLog('Mengubah data profil', currentUser);
+            profileSuccessMsg = 'Profil berhasil diperbarui!';
+            renderMainLayout(); 
+        }
+
+        // --- Export ke Excel ---
+        window.exportToExcel = function() {
+            // Gunakan SheetJS (XLSX) yang diload di <head>
+            if (typeof XLSX !== 'undefined') {
+                // Memformat data agar rapih di Excel
+                const dataToExport = users.map(u => ({
+                    'ID Pengguna': u.id,
+                    'Username': u.username,
+                    'Peran': u.role.toUpperCase(),
+                    'Nama Lengkap': u.name,
+                    'Email': u.email || '-',
+                    'Nomor Telepon': u.phone || '-',
+                    'NIP / NIM': u.nip || '-',
+                    'Departemen / Program Studi': u.department || u.major || '-',
+                    'Semester': u.semester || '-'
+                }));
+
+                // Membuat Lembar Kerja dan Buku Kerja (Workbook)
+                const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Data Pengguna");
+
+                // Mengunduh File Excel
+                XLSX.writeFile(workbook, "Data_Pengguna_STIPER.xlsx");
+                addLog('Melakukan Export Data Excel', currentUser);
+            } else {
+                alert('Library Excel belum termuat, silakan periksa koneksi internet Anda.');
+            }
+        };
+
+        // --- Event Listener Manajemen User (Admin) ---
+        function attachManageUsersEvents() {
+            const form = document.getElementById('admin-user-form');
+            if(form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    // Logika edit dan tambah admin sama seperti sebelumnya
+                    const isNew = adminEditingUser === 'NEW';
+                    const role = document.getElementById('au-role').value;
+                    const name = document.getElementById('au-name').value;
+                    
+                    let targetUser;
+                    if (isNew) {
+                        const uname = document.getElementById('au-user').value;
+                        if(users.some(x => x.username === uname)) return alert('Username sudah dipakai!');
+                        targetUser = { id: 'u' + Date.now(), username: uname, password: 'password123', role: role, name: name, firstAccess: '-', lastAccess: '-' };
+                        users.push(targetUser);
+                    } else {
+                        targetUser = users.find(u => u.id === adminEditingUser);
+                        targetUser.role = role;
+                        targetUser.name = name;
+                    }
+                    
+                    if(role === 'mahasiswa') {
+                        targetUser.nip = document.getElementById('au-nip').value;
+                        targetUser.major = document.getElementById('au-dep').value;
+                        targetUser.semester = document.getElementById('au-sem').value;
+                        delete targetUser.department;
+                    } else if (role === 'dosen') {
+                        targetUser.nip = document.getElementById('au-nip').value;
+                        targetUser.department = document.getElementById('au-dep').value;
+                        delete targetUser.major;
+                        delete targetUser.semester;
+                    }
+
+                    if(!isNew && currentUser.id === adminEditingUser) currentUser = targetUser;
+                    
+                    adminEditingUser = null;
+                    alert(isNew ? 'Pengguna baru berhasil ditambahkan.' : 'Data pengguna diperbarui.');
+                    renderMainLayout(); 
+                });
+            }
+        }
+
+        // ==============================================================================
+        // 13. GLOBAL ACTIONS (DIPANGGIL DARI KLIK HTML)
+        // ==============================================================================
+        window.toggleSidebar = function() { isSidebarOpen = !isSidebarOpen; renderMainLayout(); };
+        window.changeTab = function(tab) { activeTab = tab; selectedCourse = null; editingModule = null; dosenEditingCourse = null; adminEditingUser = null; adminResettingUser = null; takingQuizId = null; isEditingQuiz = false; renderContent(); renderSidebarMenu(); };
+        window.logout = function() { addLog('Logout dari sistem', currentUser); currentUser = null; render(); };
+        window.enrollCourse = function(cId) { const c = courses.find(x => x.id === cId); if(c && !c.enrolled.includes(currentUser.id)) { c.enrolled.push(currentUser.id); renderContent(); } };
+        window.openCourse = function(cId) { selectedCourse = courses.find(x => x.id === cId); renderContent(); };
+        window.closeCourse = function() { selectedCourse = null; editingModule = null; takingQuizId = null; isEditingQuiz = false; renderContent(); };
+
+        // Admin: Reset Password & Delete
+        function attachResetPasswordEvents() {
+            const form = document.getElementById('admin-reset-form');
+            if(form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const newPass = document.getElementById('ar-pass').value;
+                    const u = users.find(x => x.id === adminResettingUser);
+                    if(u) { u.password = newPass; addLog('Mereset password pengguna: ' + u.name, currentUser); }
+                    adminResettingUser = null;
+                    alert('Password pengguna berhasil direset.');
+                    renderMainLayout();
+                });
+            }
+        }
+        window.deleteUser = function(uId) { if(uId !== currentUser.id && confirm('Hapus pengguna ini?')) { users = users.filter(u => u.id !== uId); renderContent(); } };
+
+        // Form Dosen Kelas
+        function getDosenCourseFormHTML() {
+            const isNew = dosenEditingCourse === 'NEW';
+            const c = isNew ? { title: '', department: currentUser.department || '' } : courses.find(x => x.id === dosenEditingCourse);
+            return `<div class="bg-white p-6 rounded-lg shadow"><h2 class="text-xl font-bold mb-4">${isNew ? 'Tambah Kelas' : 'Edit Kelas'}</h2>
+                    <input type="text" id="dc-title" value="${c.title}" class="w-full p-2 border rounded mb-3" placeholder="Nama Mata Kuliah">
+                    <button onclick="saveCourseForm('${isNew}')" class="bg-green-600 text-white px-4 py-2 rounded">Simpan</button>
+                    <button onclick="dosenEditingCourse=null; renderContent();" class="border px-4 py-2 rounded">Batal</button></div>`;
+        }
+        window.saveCourseForm = function(isNewStr) {
+            const title = document.getElementById('dc-title').value;
+            if(isNewStr === 'true') courses.push({ id: 'c' + Date.now(), title: title, lecturerId: currentUser.id, department: currentUser.department, enrolled: [], modules: [], quizzes: [], quizScores: {} });
+            else { const c = courses.find(x => x.id === dosenEditingCourse); if(c) c.title = title; }
+            dosenEditingCourse = null; renderContent();
+        };
+
+        // Modul/File
+        window.addModule = function() { selectedCourse.modules.push({ id: `m${Date.now()}`, title: 'Materi Baru', content: '' }); renderContent(); };
+        window.saveModule = function(mId) {
+            const mod = selectedCourse.modules.find(m => m.id === mId);
+            if(mod) { mod.title = document.getElementById('edit-mod-title').value; mod.content = document.getElementById('edit-mod-content').value; }
+            editingModule = null; renderContent();
+        };
+        window.deleteModule = function(mId) { selectedCourse.modules = selectedCourse.modules.filter(m => m.id !== mId); renderContent(); };
+
+        // Dynamic form untuk kelola admin
+        function updateAdminFormFields(role, userObj = {}) {
+            const container = document.getElementById('dynamic-fields');
+            if(!container) return;
+            const u = userObj.id ? userObj : (adminEditingUser !== 'NEW' ? users.find(x => x.id === adminEditingUser) : {});
+            if(role === 'mahasiswa') container.innerHTML = `<div><label class="text-sm">NIM</label><input type="text" id="au-nip" value="${u.nip||''}" class="w-full p-2 border rounded"></div><div><label class="text-sm">Jurusan</label><input type="text" id="au-dep" value="${u.major||''}" class="w-full p-2 border rounded"></div><div><label class="text-sm">Semester</label><input type="number" id="au-sem" value="${u.semester||''}" class="w-full p-2 border rounded"></div>`;
+            else if (role === 'dosen') container.innerHTML = `<div><label class="text-sm">NIP</label><input type="text" id="au-nip" value="${u.nip||''}" class="w-full p-2 border rounded"></div><div><label class="text-sm">Departemen</label><input type="text" id="au-dep" value="${u.department||''}" class="w-full p-2 border rounded"></div>`;
+            else container.innerHTML = '';
+        }
+
+        function getSystemLogsHTML() {
+            return `
+                <div class="bg-white rounded-lg shadow-sm border p-4 md:p-6">
+                    <h2 class="text-xl font-bold mb-4">Log Sistem <span id="live-clock" class="text-sm font-normal text-gray-500 float-right mt-1"></span></h2>
+                    <div class="overflow-x-auto"><table class="w-full text-sm border-collapse"><tr class="bg-gray-100 border-b"><th class="p-2 text-left">Waktu</th><th class="p-2 text-left">User</th><th class="p-2 text-left">Aksi</th></tr>
+                    ${systemLogs.map(l => `<tr class="border-b"> <td class="p-2">${l.time}</td> <td class="p-2">${l.user} (${l.role})</td> <td class="p-2">${l.action}</td> </tr>`).join('')}
+                    </table></div>
+                </div>
+            `;
+        }
+
+        function initClock() {
+            clockInterval = setInterval(() => {
+                const el = document.getElementById('live-clock');
+                if(el) el.textContent = getFormattedTime();
+            }, 1000);
+        }
+
+        // ==============================================================================
+        // Inisialisasi Aplikasi Saat Halaman Dimuat
+        // ==============================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            render();
+        });
+    </script>
+</body>
+</html>
