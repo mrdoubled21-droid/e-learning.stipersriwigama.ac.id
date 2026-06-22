@@ -16,7 +16,7 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         /* Animasi Sidebar untuk transisi halus */
         #sidebar { transition: all 0.3s ease-in-out; }
-        /* Menyembunyikan scrollbar tapi tetap bisa scroll (untuk estetika kuis) */
+        /* Menyembunyikan scrollbar tapi tetap bisa scroll */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -24,36 +24,35 @@
 <body class="bg-gray-50 text-gray-800 h-screen overflow-hidden flex flex-col">
 
     <div id="app-container" class="w-full h-full">
-        <!-- Area utama tempat seluruh halaman di-render (dimuat) oleh JavaScript -->
+        <!-- Area utama tempat seluruh halaman di-render oleh JavaScript -->
     </div>
 
     <script>
         // ==============================================================================
-        // 1. DATA STATE & VARIABEL GLOBAL
-        // Bagian ini berisi data-data tiruan (dummy) dan variabel status aplikasi
+        // 1. DATA STATE & VARIABEL GLOBAL (ID = NIP/NIM)
         // ==============================================================================
         
         let users = [
-            { id: 'u1', username: 'admin', password: 'password', role: 'admin', name: 'Administrator', nip: '123456789', email: 'admin@stiper.ac.id', phone: '081234567890', address: 'Kampus STIPER', gender: 'Laki-laki', firstAccess: 'Senin, 1 Juni 2026 08:00:00 WIB', lastAccess: 'Senin, 22 Juni 2026 05:00:00 WIB' },
-            { id: 'u2', username: 'dosen1', password: 'password', role: 'dosen', name: 'Dr. Budi Santoso', department: 'Agribisnis', nip: '198001012005011001', email: 'budi.santoso@sriwigama.ac.id', phone: '081298765432', address: 'Jl. Merdeka No. 1', gender: 'Laki-laki', firstAccess: 'Rabu, 3 Juni 2026 09:15:00 WIB', lastAccess: 'Jumat, 19 Juni 2026 14:30:00 WIB' },
-            { id: 'u3', username: 'dosen2', password: 'password', role: 'dosen', name: 'Ir. Siti Aminah, M.P.', department: 'Agroteknologi', nip: '197502022000032001', email: 'siti.aminah@sriwigama.ac.id', phone: '081312345678', address: 'Jl. Sudirman No. 2', gender: 'Perempuan', firstAccess: 'Kamis, 4 Juni 2026 10:00:00 WIB', lastAccess: 'Senin, 22 Juni 2026 04:15:00 WIB' },
-            { id: 'u4', username: 'mhs1', password: 'password', role: 'mahasiswa', name: 'Andi Saputra', major: 'Agribisnis', semester: 3, nip: '2021001', email: 'andi@mhs.sriwigama.ac.id', phone: '085712345678', address: 'Jl. Mawar No. 3', gender: 'Laki-laki', firstAccess: 'Senin, 8 Juni 2026 11:20:00 WIB', lastAccess: 'Minggu, 21 Juni 2026 19:45:00 WIB' },
-            { id: 'u5', username: 'mhs2', password: 'password', role: 'mahasiswa', name: 'Dewi Lestari', major: 'Agroteknologi', semester: 5, nip: '2021002', email: 'dewi@mhs.sriwigama.ac.id', phone: '085887654321', address: 'Jl. Melati No. 4', gender: 'Perempuan', firstAccess: 'Selasa, 9 Juni 2026 13:10:00 WIB', lastAccess: 'Sabtu, 20 Juni 2026 08:30:00 WIB' },
+            { id: '123456789', username: 'admin', password: 'password', role: 'admin', name: 'Administrator', nip: '123456789', email: 'admin@stiper.ac.id', phone: '081234567890', address: 'Kampus STIPER', gender: 'Laki-laki', firstAccess: 'Senin, 1 Juni 2026 08:00:00 WIB', lastAccess: 'Senin, 22 Juni 2026 05:00:00 WIB' },
+            { id: '198001012005011001', username: 'dosen1', password: 'password', role: 'dosen', name: 'Dr. Budi Santoso', department: 'Agribisnis', nip: '198001012005011001', email: 'budi.santoso@sriwigama.ac.id', phone: '081298765432', address: 'Jl. Merdeka No. 1', gender: 'Laki-laki', firstAccess: 'Rabu, 3 Juni 2026 09:15:00 WIB', lastAccess: 'Jumat, 19 Juni 2026 14:30:00 WIB' },
+            { id: '197502022000032001', username: 'dosen2', password: 'password', role: 'dosen', name: 'Ir. Siti Aminah, M.P.', department: 'Agroteknologi', nip: '197502022000032001', email: 'siti.aminah@sriwigama.ac.id', phone: '081312345678', address: 'Jl. Sudirman No. 2', gender: 'Perempuan', firstAccess: 'Kamis, 4 Juni 2026 10:00:00 WIB', lastAccess: 'Senin, 22 Juni 2026 04:15:00 WIB' },
+            { id: '2021001', username: 'mhs1', password: 'password', role: 'mahasiswa', name: 'Andi Saputra', major: 'Agribisnis', semester: 3, nip: '2021001', email: 'andi@mhs.sriwigama.ac.id', phone: '085712345678', address: 'Jl. Mawar No. 3', gender: 'Laki-laki', firstAccess: 'Senin, 8 Juni 2026 11:20:00 WIB', lastAccess: 'Minggu, 21 Juni 2026 19:45:00 WIB' },
+            { id: '2021002', username: 'mhs2', password: 'password', role: 'mahasiswa', name: 'Dewi Lestari', major: 'Agroteknologi', semester: 5, nip: '2021002', email: 'dewi@mhs.sriwigama.ac.id', phone: '085887654321', address: 'Jl. Melati No. 4', gender: 'Perempuan', firstAccess: 'Selasa, 9 Juni 2026 13:10:00 WIB', lastAccess: 'Sabtu, 20 Juni 2026 08:30:00 WIB' },
         ];
 
         let courses = [
             { 
-                id: 'c1', title: 'Pengantar Ilmu Pertanian', lecturerId: 'u2', department: 'Agribisnis', enrolled: ['u4'], 
+                id: 'c1', title: 'Pengantar Ilmu Pertanian', lecturerId: '198001012005011001', department: 'Agribisnis', enrolled: ['2021001'], 
                 modules: [{ id: 'm1', title: 'Modul 1: Sejarah Pertanian', content: 'Pertanian dimulai sejak zaman prasejarah...', fileName: 'Modul_1_Sejarah.pdf' }],
                 quizzes: [
                     { id: 'q1', title: 'Kuis Evaluasi Modul 1', questions: [
                         { q: 'Kapan pertanian mulai dikenal manusia?', options: ['Zaman Modern', 'Zaman Prasejarah', 'Abad Pertengahan', 'Era Industri'], answer: 1 }
                     ]}
                 ],
-                quizScores: { 'q1': { 'u4': 100 } } // Format: { quizId: { userId: score } }
+                quizScores: { 'q1': { '2021001': 100 } } 
             },
-            { id: 'c2', title: 'Dasar-dasar Agronomi', lecturerId: 'u3', department: 'Agroteknologi', enrolled: ['u4', 'u5'], modules: [], quizzes: [], quizScores: {} },
-            { id: 'c3', title: 'Ekonomi Pertanian', lecturerId: 'u2', department: 'Agribisnis', enrolled: [], modules: [], quizzes: [], quizScores: {} },
+            { id: 'c2', title: 'Dasar-dasar Agronomi', lecturerId: '197502022000032001', department: 'Agroteknologi', enrolled: ['2021001', '2021002'], modules: [], quizzes: [], quizScores: {} },
+            { id: 'c3', title: 'Ekonomi Pertanian', lecturerId: '198001012005011001', department: 'Agribisnis', enrolled: [], modules: [], quizzes: [], quizScores: {} },
         ];
 
         let systemLogs = [];
@@ -61,22 +60,22 @@
         let activeTab = 'dashboard';
         let selectedCourse = null;
         
-        // Status Sidebar (true = Terbuka lebar, false = Menyempit / tertutup di mobile)
-        let isSidebarOpen = false;
+        let isSidebarOpen = true; // Status Sidebar untuk Desktop
 
-        // Status Mode Edit (Variabel ini melacak apa yang sedang diedit pengguna)
+        // States Tambahan
         let editingModule = null;
         let adminEditingUser = null; 
         let adminResettingUser = null; 
         let dosenEditingCourse = null; 
         let logFilterRole = 'all';
+        let manageUserFilter = 'all';
         let clockInterval = null;
         let profileSuccessMsg = '';
 
         // Status untuk Kuis
-        let isEditingQuiz = false; // true jika dosen sedang mengedit form kuis
-        let currentQuizData = null; // Menyimpan data sementara form kuis
-        let takingQuizId = null; // ID kuis yang sedang dikerjakan mahasiswa
+        let isEditingQuiz = false; 
+        let currentQuizData = null; 
+        let takingQuizId = null; 
 
         const appContainer = document.getElementById('app-container');
 
@@ -98,7 +97,6 @@
             });
         }
 
-        // Fungsi Induk: Menentukan halaman mana yang harus dimuat
         function render() {
             if (!currentUser) { renderLogin(); } 
             else { renderMainLayout(); }
@@ -112,7 +110,6 @@
                 <div class="min-h-screen bg-green-50 flex items-center justify-center p-4">
                     <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border-t-4 border-green-600 fade-in">
                         <div class="flex flex-col items-center mb-6">
-                            <!-- Logo pada Halaman Login -->
                             <img src="Logo STIPER.jpg" alt="Logo STIPER SRIWIGAMA" class="h-24 w-auto object-contain mb-3" onerror="this.onerror=null; this.src='https://placehold.co/100x100/166534/FFF?text=Logo';">
                             <h1 class="text-2xl font-bold text-gray-800 text-center">STIPER SRIWIGAMA</h1>
                             <p class="text-gray-500 text-sm">Portal E-Learning</p>
@@ -155,9 +152,6 @@
                     currentUser.lastAccess = getFormattedTime();
                     addLog('Login ke sistem', currentUser);
                     activeTab = 'dashboard';
-                    // Reset menu di mobile agar tertutup
-                    if(window.innerWidth < 768) isSidebarOpen = false;
-                    else isSidebarOpen = true;
                     render();
                 } else {
                     const err = document.getElementById('login-error');
@@ -171,12 +165,9 @@
         // 4. KERANGKA UTAMA APLIKASI (NAVBAR & SIDEBAR)
         // ==============================================================================
         function renderMainLayout() {
-            // CSS Responsif Sidebar: 
-            // Di Mobile: w-0 (tertutup) atau w-64 absolute z-40 (terbuka menutupi konten)
-            // Di Desktop: w-20 (minimize icon saja) atau w-64 relative (terbuka lebar)
             const sidebarClass = isSidebarOpen 
-                ? 'w-64 absolute md:relative z-40 h-full border-r shadow-xl md:shadow-none bg-white' 
-                : 'w-0 md:w-20 overflow-hidden border-r bg-white h-full';
+                ? 'w-64 absolute md:relative z-40 h-full border-r shadow-xl md:shadow-none bg-white transition-all duration-300' 
+                : 'w-0 md:w-20 overflow-hidden border-r bg-white h-full transition-all duration-300';
 
             appContainer.innerHTML = `
                 <div class="flex flex-col h-screen fade-in bg-gray-100">
@@ -185,7 +176,6 @@
                         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                             <div class="flex justify-between h-16">
                                 <div class="flex items-center">
-                                    <!-- Tombol Hamburger (Minimize/Maximize Menu) -->
                                     <button onclick="toggleSidebar()" class="mr-4 p-2 rounded-md hover:bg-green-100 text-gray-600 outline-none cursor-pointer" title="Toggle Sidebar">
                                         <i class="fas fa-bars text-xl"></i>
                                     </button>
@@ -193,12 +183,10 @@
                                     <span class="font-bold text-lg md:text-xl text-green-800 hidden sm:block">STIPER SRIWIGAMA</span>
                                 </div>
                                 <div class="flex items-center space-x-2 md:space-x-3">
-                                    <!-- Tombol Profil -->
                                     <button onclick="changeTab('profile')" class="flex items-center space-x-2 bg-green-100 hover:bg-green-200 text-green-800 px-3 md:px-4 py-2 rounded-full transition-colors border border-green-200">
                                         <div class="bg-green-600 text-white p-1 rounded-full text-xs w-6 h-6 flex items-center justify-center"><i class="fas fa-user"></i></div>
                                         <span class="text-sm font-medium hidden md:block max-w-[150px] truncate">${currentUser.name}</span>
                                     </button>
-                                    <!-- Tombol Keluar -->
                                     <button onclick="logout()" class="flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-2 rounded-md transition-colors border border-red-200" title="Keluar">
                                         <i class="fas fa-sign-out-alt"></i>
                                         <span class="text-sm font-medium hidden sm:block">Keluar</span>
@@ -212,16 +200,13 @@
                         <!-- SIDEBAR KIRI -->
                         <aside id="sidebar" class="${sidebarClass}">
                             <div class="p-3 space-y-2 mt-2" id="sidebar-menu">
-                                <!-- Menu Diisi oleh fungsi renderSidebarMenu -->
                             </div>
                         </aside>
 
                         <!-- KONTEN UTAMA KANAN -->
                         <main class="flex-1 overflow-y-auto p-4 md:p-6 w-full" id="main-content">
-                            <!-- Diisi oleh fungsi renderContent -->
                         </main>
                         
-                        <!-- Overlay Hitam Transparan untuk Mobile saat sidebar terbuka -->
                         ${isSidebarOpen ? `<div class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30" onclick="toggleSidebar()"></div>` : ''}
                     </div>
                 </div>
@@ -233,41 +218,45 @@
         // --- Render Isi Sidebar ---
         function renderSidebarMenu() {
             const menu = document.getElementById('sidebar-menu');
-            // Jika sidebar minimize, icon di tengah. Jika maximize, rata kiri.
             const alignClass = isSidebarOpen ? 'justify-start' : 'justify-center';
             const mrClass = isSidebarOpen ? 'mr-3' : 'md:mr-0';
-            const textClass = isSidebarOpen ? 'block' : 'hidden'; // Sembunyikan teks kalau minimize
+            const textClass = isSidebarOpen ? 'block' : 'hidden'; 
             
             let html = `
-                <!-- Menu Beranda -->
                 <button onclick="changeTab('dashboard')" class="w-full flex items-center p-3 rounded ${activeTab === 'dashboard' ? 'bg-green-100 text-green-800 font-semibold' : 'text-gray-600 hover:bg-gray-100'} ${alignClass}" title="Beranda">
                     <i class="fas fa-home w-5 ${mrClass}"></i>
                     <span class="sidebar-text ${textClass} whitespace-nowrap">Beranda</span>
                 </button>
             `;
 
-            // Label Menu Kelas Disesuaikan Peran
             const coursesLabel = currentUser.role === 'admin' ? 'Semua Kelas' : currentUser.role === 'dosen' ? 'Kelola Kelas' : 'Kelas Saya';
             html += `
-                <!-- Menu Kelas -->
                 <button onclick="changeTab('courses')" class="w-full flex items-center p-3 rounded ${activeTab === 'courses' ? 'bg-green-100 text-green-800 font-semibold' : 'text-gray-600 hover:bg-gray-100'} ${alignClass}" title="${coursesLabel}">
                     <i class="fas fa-chalkboard-teacher w-5 ${mrClass}"></i>
                     <span class="sidebar-text ${textClass} whitespace-nowrap">${coursesLabel}</span>
                 </button>
             `;
 
+            // Menu Khusus Mahasiswa (Laporan)
+            if (currentUser.role === 'mahasiswa') {
+                 html += `
+                    <button onclick="changeTab('reports')" class="w-full flex items-center p-3 rounded ${activeTab === 'reports' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100'} ${alignClass} mt-4 border-t border-gray-200" title="Laporan">
+                        <i class="fas fa-chart-line w-5 text-blue-600 ${mrClass}"></i>
+                        <span class="sidebar-text ${textClass} whitespace-nowrap">Laporan</span>
+                    </button>
+                `;
+            }
+
             // Menu Khusus Admin
             if (currentUser.role === 'admin') {
                 html += `
-                    <!-- Menu Kelola Pengguna -->
                     <button onclick="changeTab('manage-users')" class="w-full flex items-center p-3 rounded ${activeTab === 'manage-users' ? 'bg-purple-100 text-purple-800 font-semibold' : 'text-gray-600 hover:bg-gray-100'} ${alignClass} mt-4 border-t border-gray-200" title="Kelola Pengguna">
                         <i class="fas fa-users-cog w-5 text-purple-600 ${mrClass}"></i>
                         <span class="sidebar-text ${textClass} whitespace-nowrap">Kelola Pengguna</span>
                     </button>
-                    <!-- Menu Log Sistem -->
-                    <button onclick="changeTab('system-logs')" class="w-full flex items-center p-3 rounded ${activeTab === 'system-logs' ? 'bg-gray-800 text-white font-semibold' : 'text-gray-600 hover:bg-gray-100'} ${alignClass}" title="Log Sistem">
-                        <i class="fas fa-clipboard-list w-5 ${activeTab === 'system-logs' ? 'text-gray-300' : 'text-gray-500'} ${mrClass}"></i>
-                        <span class="sidebar-text ${textClass} whitespace-nowrap">Log Sistem</span>
+                    <button onclick="changeTab('system-logs')" class="w-full flex items-center p-3 rounded ${activeTab === 'system-logs' ? 'bg-gray-800 text-white font-semibold' : 'text-gray-600 hover:bg-gray-100'} ${alignClass}" title="Log Pengguna">
+                        <i class="fas fa-list w-5 ${activeTab === 'system-logs' ? 'text-gray-300' : 'text-gray-500'} ${mrClass}"></i>
+                        <span class="sidebar-text ${textClass} whitespace-nowrap">Log Pengguna</span>
                     </button>
                 `;
             }
@@ -296,11 +285,12 @@
             } else if (activeTab === 'system-logs' && currentUser.role === 'admin') {
                 inner.innerHTML = getSystemLogsHTML();
                 initClock();
+            } else if (activeTab === 'reports' && currentUser.role === 'mahasiswa') {
+                inner.innerHTML = getReportsHTML();
             } else if (activeTab === 'courses' && !selectedCourse) {
                 if (dosenEditingCourse) inner.innerHTML = getDosenCourseFormHTML();
                 else inner.innerHTML = getCoursesHTML();
             } else if (selectedCourse) {
-                // Tampilan Detail Kelas (Materi & Kuis)
                 if (takingQuizId) inner.innerHTML = getQuizTakerHTML();
                 else if (isEditingQuiz) inner.innerHTML = getQuizEditorHTML();
                 else inner.innerHTML = getCourseDetailHTML();
@@ -311,11 +301,10 @@
         // 6. MENU BERANDA (DASHBOARD)
         // ==============================================================================
         function getDashboardHTML() {
-            const totalMateri = courses.reduce((acc, curr) => acc + curr.modules.length, 0);
+            const totalMateri = courses.reduce((acc, curr) => acc + (curr.modules ? curr.modules.length : 0), 0);
             return `
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">Selamat Datang, <span class="text-green-700">${currentUser.name}</span></h2>
                 
-                <!-- Kotak Informasi -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
                         <div class="flex items-center">
@@ -337,7 +326,6 @@
                     </div>
                 </div>
 
-                <!-- Pengumuman -->
                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6 shadow-sm">
                     <h3 class="text-lg font-bold text-yellow-800 mb-2"><i class="fas fa-bullhorn mr-2"></i>Pengumuman Kampus</h3>
                     <p class="text-yellow-700">Pemberitahuan: Fitur ujian dan kuis untuk Dosen kini telah diaktifkan. Mahasiswa wajib memperhatikan jadwal kuis pada masing-masing kelas.</p>
@@ -364,9 +352,11 @@
             const depLabel = isMhs ? 'Program Studi' : 'Departemen/Jabatan';
             const depValue = isMhs ? (currentUser.major || '') : (currentUser.department || '');
 
+            const historyTitle = isDosen ? "Aktivitas Login" : "Riwayat Aktivitas Akun";
+
             let formFieldsHtml = '';
 
-            // --- Formulir Khusus Admin (Dipersingkat) ---
+            // --- Formulir Khusus Admin ---
             if (isAdmin) {
                 formFieldsHtml = `
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -427,7 +417,7 @@
 
                     <!-- Riwayat Akses -->
                     <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
-                        <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-history mr-2 text-blue-600"></i> Riwayat Aktivitas Akun</h3>
+                        <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-history mr-2 text-blue-600"></i> ${historyTitle}</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="bg-blue-50 border border-blue-100 p-4 rounded-lg">
                                 <p class="text-xs text-blue-500 font-semibold mb-1 uppercase">First Access to Site</p>
@@ -447,15 +437,47 @@
         // 8. MENU KELOLA PENGGUNA (ADMIN ONLY) & EKSPOR EXCEL
         // ==============================================================================
         function getManageUsersHTML() {
+            let filteredUsers = users.filter(u => manageUserFilter === 'all' || u.role === manageUserFilter);
+
             let html = `
                 <div class="bg-white rounded-lg shadow-sm border p-4 md:p-6 w-full overflow-hidden">
                     <div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4 border-b pb-4">
                         <h2 class="text-xl md:text-2xl font-bold text-gray-800 flex items-center"><i class="fas fa-users-cog text-purple-600 mr-2"></i> Manajemen Pengguna</h2>
                         <div class="flex flex-wrap gap-2">
-                            <!-- Tombol Ekspor Excel Sesungguhnya -->
-                            <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm shadow-sm flex items-center"><i class="fas fa-file-excel mr-2"></i> Export Data (Excel)</button>
+                            <!-- Import/Export Data -->
+                            <label class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm shadow-sm flex items-center cursor-pointer">
+                                <i class="fas fa-file-import mr-2"></i> Import Data
+                                <input type="file" class="hidden" accept=".xlsx, .xls, .csv" onchange="simulateExcelImport(this)">
+                            </label>
+                            <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm shadow-sm flex items-center"><i class="fas fa-file-excel mr-2"></i> Export Excel</button>
                             <button onclick="adminEditingUser='NEW'; renderContent();" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm shadow-sm flex items-center"><i class="fas fa-user-plus mr-2"></i> Tambah Baru</button>
                         </div>
+                    </div>
+
+                    <!-- Panel Hapus Massal -->
+                    <div class="bg-red-50 border border-red-200 p-4 rounded-lg mb-6 shadow-sm">
+                        <h3 class="text-sm font-bold text-red-700 mb-2"><i class="fas fa-exclamation-triangle mr-1"></i> Hapus Massal Pengguna</h3>
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <select id="md-role" class="border p-2 rounded text-sm focus:ring-1 focus:ring-red-500 bg-white">
+                                <option value="">-- Pilih Role --</option>
+                                <option value="mahasiswa">Mahasiswa</option>
+                                <option value="dosen">Dosen</option>
+                            </select>
+                            <input type="text" id="md-major" placeholder="Jurusan (Opsional)" class="border p-2 rounded text-sm focus:ring-1 focus:ring-red-500">
+                            <input type="number" id="md-semester" placeholder="Smt (Opsional)" class="border p-2 rounded text-sm w-32 focus:ring-1 focus:ring-red-500">
+                            <button onclick="executeMassDelete()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm shadow-sm transition"><i class="fas fa-trash mr-1"></i> Hapus Data Sesuai Kriteria</button>
+                        </div>
+                    </div>
+
+                    <!-- Filter & Tabel -->
+                    <div class="mb-4 flex items-center gap-2">
+                        <span class="text-sm font-medium text-gray-600">Filter Data: </span>
+                        <select onchange="manageUserFilter=this.value; renderContent();" class="border p-2 rounded text-sm bg-white shadow-sm">
+                            <option value="all" ${manageUserFilter==='all'?'selected':''}>Semua Role</option>
+                            <option value="admin" ${manageUserFilter==='admin'?'selected':''}>Admin</option>
+                            <option value="dosen" ${manageUserFilter==='dosen'?'selected':''}>Dosen</option>
+                            <option value="mahasiswa" ${manageUserFilter==='mahasiswa'?'selected':''}>Mahasiswa</option>
+                        </select>
                     </div>
             `;
 
@@ -515,23 +537,23 @@
                     </div>
                 `;
             } 
-            // Tampilan Tabel (Responsif via overflow-x-auto)
+            // Tampilan Tabel
             else {
                 html += `
                     <div class="overflow-x-auto rounded border no-scrollbar">
                         <table class="min-w-full text-left border-collapse bg-white whitespace-nowrap">
                             <thead>
                                 <tr class="bg-gray-100 border-b">
-                                    <th class="p-3 text-sm font-semibold">Nama</th><th class="p-3 text-sm font-semibold">Username</th><th class="p-3 text-sm font-semibold">Peran</th><th class="p-3 text-sm font-semibold">Info</th><th class="p-3 text-sm font-semibold text-center">Aksi</th>
+                                    <th class="p-3 text-sm font-semibold">Nama</th><th class="p-3 text-sm font-semibold">ID/Username</th><th class="p-3 text-sm font-semibold">Peran</th><th class="p-3 text-sm font-semibold">Info</th><th class="p-3 text-sm font-semibold text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                ${users.map(u => {
+                                ${filteredUsers.map(u => {
                                     let proofBtn = u.resetFormUrl ? `<button onclick="window.open('${u.resetFormUrl}', '_blank')" class="text-orange-600 bg-orange-50 hover:bg-orange-100 p-2 rounded mx-1 text-xs" title="Bukti Reset"><i class="fas fa-file-contract mr-1"></i></button>` : '';
                                     return `
                                     <tr class="border-b hover:bg-gray-50 transition-colors">
                                         <td class="p-3 text-sm font-medium">${u.name}</td>
-                                        <td class="p-3 text-sm text-gray-500">@${u.username}</td>
+                                        <td class="p-3 text-sm text-gray-500">ID: ${u.id}<br><span class="text-xs">@${u.username}</span></td>
                                         <td class="p-3 text-sm"><span class="px-2 py-1 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-red-100 text-red-700' : u.role === 'dosen' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">${u.role.toUpperCase()}</span></td>
                                         <td class="p-3 text-sm text-gray-600">${u.role === 'mahasiswa' ? `Smt: ${u.semester||'-'} | ${u.major||'-'}` : u.role === 'dosen' ? u.department||'-' : '-'}</td>
                                         <td class="p-3 text-sm text-center">
@@ -543,6 +565,7 @@
                                     </tr>
                                     `
                                 }).join('')}
+                                ${filteredUsers.length === 0 ? '<tr><td colspan="5" class="p-4 text-center text-gray-500">Tidak ada data ditemukan.</td></tr>' : ''}
                             </tbody>
                         </table>
                     </div>
@@ -552,8 +575,138 @@
             return html;
         }
 
+        // --- Fitur Hapus Massal ---
+        window.executeMassDelete = function() {
+            const role = document.getElementById('md-role').value;
+            const major = document.getElementById('md-major').value.trim();
+            const semester = document.getElementById('md-semester').value.trim();
+            
+            if(!role && !major && !semester) {
+                return alert('Pilih setidaknya satu kriteria untuk menghapus massal!');
+            }
+            
+            if(confirm('Anda yakin ingin menghapus pengguna berdasarkan kriteria ini? Tindakan ini tidak dapat dibatalkan.')) {
+                const initialCount = users.length;
+                users = users.filter(u => {
+                    if (u.id === currentUser.id) return true; // Proteksi diri sendiri
+                    
+                    let match = true;
+                    if (role && u.role !== role) match = false;
+                    if (major && u.major !== major && u.department !== major) match = false;
+                    if (semester && String(u.semester) !== semester) match = false;
+                    
+                    return !match; // Jika cocok dengan kriteria hapus, kembalikan false agar terhapus
+                });
+                const deletedCount = initialCount - users.length;
+                alert(`${deletedCount} pengguna berhasil dihapus dari sistem.`);
+                renderContent();
+            }
+        }
+
         // ==============================================================================
-        // 9. MENU DAFTAR KELAS & MATERI
+        // 9. LOG PENGGUNA (ADMIN ONLY)
+        // ==============================================================================
+        function getSystemLogsHTML() {
+            return `
+                <div class="bg-white rounded-lg shadow-sm border p-4 md:p-6">
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <h2 class="text-xl md:text-2xl font-bold text-gray-800 flex items-center"><i class="fas fa-list text-gray-800 mr-2"></i> Log Pengguna</h2>
+                        <div class="bg-gray-800 text-white px-3 py-1 rounded-md font-mono text-sm flex items-center shadow-inner">
+                            <i class="fas fa-server mr-2 text-green-400"></i> Waktu Server: <span id="live-clock" class="ml-2 font-bold">${getFormattedTime()}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4 flex flex-wrap gap-2">
+                        <button onclick="logFilterRole='all'; renderContent();" class="px-3 py-1 text-sm rounded ${logFilterRole==='all' ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Semua Role</button>
+                        <button onclick="logFilterRole='admin'; renderContent();" class="px-3 py-1 text-sm rounded ${logFilterRole==='admin' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Admin</button>
+                        <button onclick="logFilterRole='dosen'; renderContent();" class="px-3 py-1 text-sm rounded ${logFilterRole==='dosen' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Dosen</button>
+                        <button onclick="logFilterRole='mahasiswa'; renderContent();" class="px-3 py-1 text-sm rounded ${logFilterRole==='mahasiswa' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Mahasiswa</button>
+                    </div>
+
+                    <div class="overflow-x-auto rounded border">
+                        <table class="w-full text-left border-collapse bg-white">
+                            <thead>
+                                <tr class="bg-gray-100 border-b">
+                                    <th class="p-3 text-sm font-semibold w-1/4">Waktu</th>
+                                    <th class="p-3 text-sm font-semibold">Pengguna</th>
+                                    <th class="p-3 text-sm font-semibold">Role</th>
+                                    <th class="p-3 text-sm font-semibold">Aktivitas</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${systemLogs.filter(l => logFilterRole === 'all' || l.role === logFilterRole).map(l => `
+                                    <tr class="border-b hover:bg-gray-50 transition-colors">
+                                        <td class="p-3 text-sm text-gray-600">${l.time}</td>
+                                        <td class="p-3 text-sm font-medium text-gray-800">${l.user}</td>
+                                        <td class="p-3 text-sm">
+                                            <span class="px-2 py-1 rounded-full text-xs font-semibold ${l.role === 'admin' ? 'bg-red-100 text-red-700' : l.role === 'dosen' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">
+                                                ${l.role.toUpperCase()}
+                                            </span>
+                                        </td>
+                                        <td class="p-3 text-sm text-gray-700">${l.action}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="4" class="p-4 text-center text-gray-500">Belum ada aktivitas tercatat untuk filter ini.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==============================================================================
+        // 10. LAPORAN MAHASISWA
+        // ==============================================================================
+        function getReportsHTML() {
+            let enrolledCourses = courses.filter(c => c.enrolled.includes(currentUser.id));
+            
+            // Generate list Kelas
+            let coursesHtml = enrolledCourses.length > 0 
+                ? enrolledCourses.map(c => `<li class="p-4 border-b bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center"><span class="font-bold text-gray-800">${c.title}</span><span class="text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded mt-2 md:mt-0">${c.department}</span></li>`).join('') 
+                : '<p class="p-4 text-gray-500 italic">Belum ada riwayat kelas yang diikuti.</p>';
+
+            // Generate list Kuis
+            let quizHtml = '';
+            let hasQuiz = false;
+            enrolledCourses.forEach(c => {
+                if (c.quizzes) {
+                    c.quizzes.forEach(q => {
+                        if (c.quizScores && c.quizScores[q.id] && c.quizScores[q.id][currentUser.id] !== undefined) {
+                            hasQuiz = true;
+                            let score = c.quizScores[q.id][currentUser.id];
+                            let color = score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-600' : 'text-red-600';
+                            quizHtml += `<li class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                                <div><span class="font-bold text-gray-800">${q.title}</span><br><span class="text-xs text-gray-500"><i class="fas fa-book mr-1"></i> ${c.title}</span></div>
+                                <div class="font-bold text-xl ${color}">${score}</div>
+                            </li>`;
+                        }
+                    });
+                }
+            });
+            if (!hasQuiz) quizHtml = '<p class="p-4 text-gray-500 italic">Belum ada riwayat pengerjaan kuis / ujian.</p>';
+
+            return `
+                <div class="max-w-5xl mx-auto">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4"><i class="fas fa-chart-line mr-2 text-blue-600"></i> Laporan Mahasiswa</h2>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Panel Riwayat Kelas -->
+                        <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+                            <div class="bg-blue-600 text-white p-4"><h3 class="font-bold"><i class="fas fa-chalkboard-teacher mr-2"></i> Riwayat Kelas yang Diikuti</h3></div>
+                            <ul class="list-none">${coursesHtml}</ul>
+                        </div>
+                        
+                        <!-- Panel Riwayat Kuis -->
+                        <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+                            <div class="bg-green-600 text-white p-4"><h3 class="font-bold"><i class="fas fa-tasks mr-2"></i> Riwayat & Nilai Kuis</h3></div>
+                            <ul class="list-none">${quizHtml}</ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==============================================================================
+        // 11. MENU DAFTAR KELAS & MATERI
         // ==============================================================================
         function getCoursesHTML() {
             let topBar = `<div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4"><h2 class="text-2xl font-bold text-gray-800">Daftar Mata Kuliah</h2>`;
@@ -568,7 +721,7 @@
                 const isEnrolled = course.enrolled.includes(currentUser.id);
                 const isMyCourse = course.lecturerId === currentUser.id;
                 
-                // Filter: Dosen hanya lihat kelasnya, Mahasiswa hanya lihat yg diikutinya jika tab 'kelas saya' (karena di sini gabung, biar admin/semua tampil)
+                // Filter
                 if (currentUser.role === 'dosen' && !isMyCourse) return;
                 
                 const lecturer = users.find(u => u.id === course.lecturerId);
@@ -615,7 +768,6 @@
             return html;
         }
 
-        // --- Tampilan Dalam Kelas (Detail Kelas) ---
         function getCourseDetailHTML() {
             const lecturer = users.find(u => u.id === selectedCourse.lecturerId);
             const isMyCourse = currentUser.role === 'dosen' && currentUser.id === selectedCourse.lecturerId;
@@ -630,16 +782,13 @@
                 </div>
             `;
 
-            // Menu Materi
             let addModBtn = isMyCourse ? `<button onclick="addModule()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm shadow-sm"><i class="fas fa-cloud-upload-alt mr-1"></i> Upload File / Materi</button>` : '';
             html += `<div class="flex flex-wrap justify-between items-center mb-4 gap-2"><h3 class="text-xl font-bold text-gray-800"><i class="fas fa-book-open mr-2 text-green-600"></i> Materi Pembelajaran</h3>${addModBtn}</div><div class="space-y-4 mb-8">`;
             
-            // Loop Materi
             if (!selectedCourse.modules || selectedCourse.modules.length === 0) {
                 html += `<div class="bg-white rounded border p-8 text-center text-gray-500 border-dashed border-2">Belum ada materi.</div>`;
             } else {
                 selectedCourse.modules.forEach(mod => {
-                    // Cek jika sedang diedit
                     if (editingModule === mod.id) {
                         html += `
                             <div class="bg-white rounded border p-5 border-l-4 border-blue-500 shadow-md">
@@ -658,9 +807,6 @@
             }
             html += `</div>`;
 
-            // =======================================================
-            // BAGIAN KUIS / UJIAN
-            // =======================================================
             let addQuizBtn = isMyCourse ? `<button onclick="createNewQuiz()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm shadow-sm"><i class="fas fa-plus mr-1"></i> Buat Kuis Baru</button>` : '';
             html += `<div class="flex flex-wrap justify-between items-center mb-4 gap-2"><h3 class="text-xl font-bold text-gray-800"><i class="fas fa-tasks mr-2 text-purple-600"></i> Evaluasi & Kuis</h3>${addQuizBtn}</div><div class="space-y-4">`;
 
@@ -668,7 +814,7 @@
                 html += `<div class="bg-white rounded border p-8 text-center text-gray-500 border-dashed border-2">Belum ada kuis/ujian tersedia.</div>`;
             } else {
                 selectedCourse.quizzes.forEach(quiz => {
-                    let score = (selectedCourse.quizScores && selectedCourse.quizScores[quiz.id] && selectedCourse.quizScores[quiz.id][currentUser.id]) 
+                    let score = (selectedCourse.quizScores && selectedCourse.quizScores[quiz.id] && selectedCourse.quizScores[quiz.id][currentUser.id] !== undefined) 
                                 ? selectedCourse.quizScores[quiz.id][currentUser.id] : null;
 
                     let qActions = '';
@@ -696,7 +842,7 @@
         }
 
         // ==============================================================================
-        // 10. FITUR KUIS (FORM EDITOR UNTUK DOSEN)
+        // 12. FITUR KUIS (FORM EDITOR UNTUK DOSEN)
         // ==============================================================================
         function createNewQuiz() {
             currentQuizData = { id: 'q' + Date.now(), title: 'Kuis Baru', questions: [] };
@@ -706,7 +852,7 @@
 
         function editQuiz(quizId) {
             const qz = selectedCourse.quizzes.find(q => q.id === quizId);
-            currentQuizData = JSON.parse(JSON.stringify(qz)); // Clone data agar tidak langsung merubah state
+            currentQuizData = JSON.parse(JSON.stringify(qz)); 
             isEditingQuiz = true;
             renderContent();
         }
@@ -757,7 +903,7 @@
         }
 
         function addQuestion() {
-            syncQuizInputs(); // Ambil inputan saat ini sebelum render ulang
+            syncQuizInputs(); 
             currentQuizData.questions.push({ q: '', options: ['','','',''], answer: 0 });
             renderContent();
         }
@@ -800,7 +946,7 @@
         }
 
         // ==============================================================================
-        // 11. FITUR MAHASISWA MENGERJAKAN KUIS
+        // 13. FITUR MAHASISWA MENGERJAKAN KUIS
         // ==============================================================================
         function takeQuiz(quizId) {
             takingQuizId = quizId;
@@ -841,7 +987,6 @@
                 </div>
             `;
 
-            // Timeout needed because elements are injected as string
             setTimeout(() => {
                 document.getElementById('quiz-take-form').addEventListener('submit', (e) => {
                     e.preventDefault();
@@ -869,7 +1014,7 @@
         }
 
         // ==============================================================================
-        // 12. FUNGSI LOGIKA EVENT LAINNYA
+        // 14. FUNGSI LOGIKA EVENT LAINNYA & INISIALISASI
         // ==============================================================================
         
         // --- Form Profil & Form Kelas ---
@@ -880,22 +1025,16 @@
 
         function handleProfileSubmit(e) {
             e.preventDefault();
-            // Validasi Khusus Admin
             if (currentUser.role === 'admin') {
                 currentUser.name = document.getElementById('p-name').value;
             } else {
-                // Mahasiswa & Dosen Validasi
                 const emailVal = document.getElementById('p-email').value;
-                if (currentUser.role === 'mahasiswa' && emailVal && !emailVal.endsWith('@mhs.sriwigama.ac.id')) {
-                    return alert('Email mahasiswa harus menggunakan domain @mhs.sriwigama.ac.id');
-                } else if (currentUser.role === 'dosen' && emailVal && !emailVal.endsWith('@sriwigama.ac.id')) {
-                    return alert('Email dosen harus menggunakan domain @sriwigama.ac.id');
-                }
+                if (currentUser.role === 'mahasiswa' && emailVal && !emailVal.endsWith('@mhs.sriwigama.ac.id')) return alert('Email mahasiswa harus menggunakan domain @mhs.sriwigama.ac.id');
+                else if (currentUser.role === 'dosen' && emailVal && !emailVal.endsWith('@sriwigama.ac.id')) return alert('Email dosen harus menggunakan domain @sriwigama.ac.id');
                 currentUser.email = emailVal;
                 currentUser.phone = document.getElementById('p-phone').value;
             }
 
-            // Password
             const newPass = document.getElementById('p-pass').value;
             if(newPass && newPass.trim() !== '') currentUser.password = newPass;
             
@@ -907,29 +1046,35 @@
             renderMainLayout(); 
         }
 
+        // --- Simulasi Import Excel ---
+        window.simulateExcelImport = function(inputElement) {
+            if(inputElement.files.length > 0) {
+                const fileName = inputElement.files[0].name;
+                inputElement.value = ''; 
+                setTimeout(() => {
+                    alert(`Berhasil! Data dari file "${fileName}" berhasil diimpor.`);
+                    renderContent();
+                }, 800);
+            }
+        };
+
         // --- Export ke Excel ---
         window.exportToExcel = function() {
-            // Gunakan SheetJS (XLSX) yang diload di <head>
             if (typeof XLSX !== 'undefined') {
-                // Memformat data agar rapih di Excel
                 const dataToExport = users.map(u => ({
-                    'ID Pengguna': u.id,
+                    'ID Pengguna / NIP / NIM': u.id,
                     'Username': u.username,
                     'Peran': u.role.toUpperCase(),
                     'Nama Lengkap': u.name,
                     'Email': u.email || '-',
                     'Nomor Telepon': u.phone || '-',
-                    'NIP / NIM': u.nip || '-',
                     'Departemen / Program Studi': u.department || u.major || '-',
                     'Semester': u.semester || '-'
                 }));
 
-                // Membuat Lembar Kerja dan Buku Kerja (Workbook)
                 const worksheet = XLSX.utils.json_to_sheet(dataToExport);
                 const workbook = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(workbook, worksheet, "Data Pengguna");
-
-                // Mengunduh File Excel
                 XLSX.writeFile(workbook, "Data_Pengguna_STIPER.xlsx");
                 addLog('Melakukan Export Data Excel', currentUser);
             } else {
@@ -937,13 +1082,11 @@
             }
         };
 
-        // --- Event Listener Manajemen User (Admin) ---
         function attachManageUsersEvents() {
             const form = document.getElementById('admin-user-form');
             if(form) {
                 form.addEventListener('submit', (e) => {
                     e.preventDefault();
-                    // Logika edit dan tambah admin sama seperti sebelumnya
                     const isNew = adminEditingUser === 'NEW';
                     const role = document.getElementById('au-role').value;
                     const name = document.getElementById('au-name').value;
@@ -952,7 +1095,9 @@
                     if (isNew) {
                         const uname = document.getElementById('au-user').value;
                         if(users.some(x => x.username === uname)) return alert('Username sudah dipakai!');
-                        targetUser = { id: 'u' + Date.now(), username: uname, password: 'password123', role: role, name: name, firstAccess: '-', lastAccess: '-' };
+                        // Membuat ID random khusus dummy import. Normalnya disesuaikan form NIM/NIP.
+                        const newId = 'new' + Date.now(); 
+                        targetUser = { id: newId, username: uname, password: 'password123', role: role, name: name, nip: newId, firstAccess: '-', lastAccess: '-' };
                         users.push(targetUser);
                     } else {
                         targetUser = users.find(u => u.id === adminEditingUser);
@@ -962,11 +1107,13 @@
                     
                     if(role === 'mahasiswa') {
                         targetUser.nip = document.getElementById('au-nip').value;
+                        targetUser.id = targetUser.nip;
                         targetUser.major = document.getElementById('au-dep').value;
                         targetUser.semester = document.getElementById('au-sem').value;
                         delete targetUser.department;
                     } else if (role === 'dosen') {
                         targetUser.nip = document.getElementById('au-nip').value;
+                        targetUser.id = targetUser.nip;
                         targetUser.department = document.getElementById('au-dep').value;
                         delete targetUser.major;
                         delete targetUser.semester;
@@ -982,7 +1129,7 @@
         }
 
         // ==============================================================================
-        // 13. GLOBAL ACTIONS (DIPANGGIL DARI KLIK HTML)
+        // 15. GLOBAL ACTIONS 
         // ==============================================================================
         window.toggleSidebar = function() { isSidebarOpen = !isSidebarOpen; renderMainLayout(); };
         window.changeTab = function(tab) { activeTab = tab; selectedCourse = null; editingModule = null; dosenEditingCourse = null; adminEditingUser = null; adminResettingUser = null; takingQuizId = null; isEditingQuiz = false; renderContent(); renderSidebarMenu(); };
@@ -991,7 +1138,7 @@
         window.openCourse = function(cId) { selectedCourse = courses.find(x => x.id === cId); renderContent(); };
         window.closeCourse = function() { selectedCourse = null; editingModule = null; takingQuizId = null; isEditingQuiz = false; renderContent(); };
 
-        // Admin: Reset Password & Delete
+        // Admin Reset Password
         function attachResetPasswordEvents() {
             const form = document.getElementById('admin-reset-form');
             if(form) {
@@ -1033,25 +1180,13 @@
         };
         window.deleteModule = function(mId) { selectedCourse.modules = selectedCourse.modules.filter(m => m.id !== mId); renderContent(); };
 
-        // Dynamic form untuk kelola admin
         function updateAdminFormFields(role, userObj = {}) {
             const container = document.getElementById('dynamic-fields');
             if(!container) return;
             const u = userObj.id ? userObj : (adminEditingUser !== 'NEW' ? users.find(x => x.id === adminEditingUser) : {});
-            if(role === 'mahasiswa') container.innerHTML = `<div><label class="text-sm">NIM</label><input type="text" id="au-nip" value="${u.nip||''}" class="w-full p-2 border rounded"></div><div><label class="text-sm">Jurusan</label><input type="text" id="au-dep" value="${u.major||''}" class="w-full p-2 border rounded"></div><div><label class="text-sm">Semester</label><input type="number" id="au-sem" value="${u.semester||''}" class="w-full p-2 border rounded"></div>`;
-            else if (role === 'dosen') container.innerHTML = `<div><label class="text-sm">NIP</label><input type="text" id="au-nip" value="${u.nip||''}" class="w-full p-2 border rounded"></div><div><label class="text-sm">Departemen</label><input type="text" id="au-dep" value="${u.department||''}" class="w-full p-2 border rounded"></div>`;
+            if(role === 'mahasiswa') container.innerHTML = `<div><label class="text-sm">NIM (ID)</label><input type="text" id="au-nip" value="${u.nip||''}" class="w-full p-2 border rounded"></div><div><label class="text-sm">Jurusan</label><input type="text" id="au-dep" value="${u.major||''}" class="w-full p-2 border rounded"></div><div><label class="text-sm">Semester</label><input type="number" id="au-sem" value="${u.semester||''}" class="w-full p-2 border rounded"></div>`;
+            else if (role === 'dosen') container.innerHTML = `<div><label class="text-sm">NIP (ID)</label><input type="text" id="au-nip" value="${u.nip||''}" class="w-full p-2 border rounded"></div><div><label class="text-sm">Departemen</label><input type="text" id="au-dep" value="${u.department||''}" class="w-full p-2 border rounded"></div>`;
             else container.innerHTML = '';
-        }
-
-        function getSystemLogsHTML() {
-            return `
-                <div class="bg-white rounded-lg shadow-sm border p-4 md:p-6">
-                    <h2 class="text-xl font-bold mb-4">Log Sistem <span id="live-clock" class="text-sm font-normal text-gray-500 float-right mt-1"></span></h2>
-                    <div class="overflow-x-auto"><table class="w-full text-sm border-collapse"><tr class="bg-gray-100 border-b"><th class="p-2 text-left">Waktu</th><th class="p-2 text-left">User</th><th class="p-2 text-left">Aksi</th></tr>
-                    ${systemLogs.map(l => `<tr class="border-b"> <td class="p-2">${l.time}</td> <td class="p-2">${l.user} (${l.role})</td> <td class="p-2">${l.action}</td> </tr>`).join('')}
-                    </table></div>
-                </div>
-            `;
         }
 
         function initClock() {
@@ -1061,9 +1196,6 @@
             }, 1000);
         }
 
-        // ==============================================================================
-        // Inisialisasi Aplikasi Saat Halaman Dimuat
-        // ==============================================================================
         document.addEventListener('DOMContentLoaded', () => {
             render();
         });
