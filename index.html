@@ -3,103 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Learning STIPER SRIWIGAMA</title>
+    <title>E-LMS STIPER SRIWIGAMA</title>
+    <!-- Tailwind CSS & FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Library SheetJS untuk Export ke Excel sungguhan -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- SheetJS untuk Export/Import Excel Riil -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
         body { font-family: 'Inter', sans-serif; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        /* Animasi Sidebar untuk transisi halus */
-        #sidebar { transition: all 0.3s ease-in-out; }
-        /* Menyembunyikan scrollbar tapi tetap bisa scroll */
+        #sidebar { transition: width 0.3s ease-in-out; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .progress-bar-fill { transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 h-screen overflow-hidden flex flex-col">
 
-    <div id="app-container" class="w-full h-full">
-        <!-- Area utama tempat seluruh halaman di-render oleh JavaScript -->
+    <div id="app-container" class="w-full h-full flex flex-col overflow-hidden">
+        <!-- Konten utama di-render oleh JS -->
+    </div>
+
+    <!-- Custom Dialog Modal Info -->
+    <div id="alert-modal" class="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 fade-in hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100">
+            <div class="flex items-center gap-3 text-green-700 mb-4">
+                <div class="p-2.5 bg-green-50 rounded-full">
+                    <i class="fas fa-info-circle text-lg"></i>
+                </div>
+                <h3 id="alert-modal-title" class="font-bold text-lg text-gray-800">Informasi</h3>
+            </div>
+            <div id="alert-modal-message" class="text-sm text-gray-600 mb-6 leading-relaxed">Pesan...</div>
+            <div class="flex justify-end">
+                <button onclick="closeAlertModal()" class="px-5 py-2.5 bg-[#0e5c32] hover:bg-green-800 text-white rounded-lg text-sm font-semibold transition">Selesai</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Modal -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 fade-in hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100">
+            <div class="flex items-center gap-3 text-red-600 mb-4">
+                <div class="p-2.5 bg-red-50 rounded-full">
+                    <i class="fas fa-exclamation-triangle text-lg"></i>
+                </div>
+                <h3 class="font-bold text-lg text-gray-800">Konfirmasi Tindakan</h3>
+            </div>
+            <p id="confirm-modal-message" class="text-sm text-gray-600 mb-6 leading-relaxed">Pertanyaan...</p>
+            <div class="flex gap-3 justify-end">
+                <button id="confirm-modal-cancel" class="px-4 py-2.5 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-semibold transition">Batal</button>
+                <button id="confirm-modal-ok" class="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition">Ya, Lanjutkan</button>
+            </div>
+        </div>
     </div>
 
     <script>
         // ==============================================================================
-        // 1. DATA STATE & VARIABEL GLOBAL (ID = NIP/NIM)
+        // 1. DATA STATE UTAMA (ID Pengguna disesuaikan dengan NIP/NIM)
         // ==============================================================================
-        
         let users = [
-            { id: '123456789', username: 'admin', password: 'password', role: 'admin', name: 'Administrator', nip: '123456789', email: 'admin@stiper.ac.id', phone: '081234567890', address: 'Kampus STIPER', gender: 'Laki-laki', firstAccess: 'Senin, 1 Juni 2026 08:00:00 WIB', lastAccess: 'Senin, 22 Juni 2026 05:00:00 WIB' },
-            { id: '198001012005011001', username: 'dosen1', password: 'password', role: 'dosen', name: 'Dr. Budi Santoso', department: 'Agribisnis', nip: '198001012005011001', email: 'budi.santoso@sriwigama.ac.id', phone: '081298765432', address: 'Jl. Merdeka No. 1', gender: 'Laki-laki', firstAccess: 'Rabu, 3 Juni 2026 09:15:00 WIB', lastAccess: 'Jumat, 19 Juni 2026 14:30:00 WIB' },
-            { id: '197502022000032001', username: 'dosen2', password: 'password', role: 'dosen', name: 'Ir. Siti Aminah, M.P.', department: 'Agroteknologi', nip: '197502022000032001', email: 'siti.aminah@sriwigama.ac.id', phone: '081312345678', address: 'Jl. Sudirman No. 2', gender: 'Perempuan', firstAccess: 'Kamis, 4 Juni 2026 10:00:00 WIB', lastAccess: 'Senin, 22 Juni 2026 04:15:00 WIB' },
-            { id: '2021001', username: 'mhs1', password: 'password', role: 'mahasiswa', name: 'Andi Saputra', major: 'Agribisnis', semester: 3, nip: '2021001', email: 'andi@mhs.sriwigama.ac.id', phone: '085712345678', address: 'Jl. Mawar No. 3', gender: 'Laki-laki', firstAccess: 'Senin, 8 Juni 2026 11:20:00 WIB', lastAccess: 'Minggu, 21 Juni 2026 19:45:00 WIB' },
-            { id: '2021002', username: 'mhs2', password: 'password', role: 'mahasiswa', name: 'Dewi Lestari', major: 'Agroteknologi', semester: 5, nip: '2021002', email: 'dewi@mhs.sriwigama.ac.id', phone: '085887654321', address: 'Jl. Melati No. 4', gender: 'Perempuan', firstAccess: 'Selasa, 9 Juni 2026 13:10:00 WIB', lastAccess: 'Sabtu, 20 Juni 2026 08:30:00 WIB' },
+            { id: '123456789', username: 'admin', password: 'password', role: 'admin', name: 'Administrator', nip: '123456789', email: 'admin@stiper.ac.id', phone: '081234567890', address: 'Kampus STIPER Sriwigama', gender: 'Laki-laki', firstAccess: 'Senin, 1 Juni 2026 08:00:00 WIB', lastAccess: 'Senin, 22 Juni 2026 15:16:45 WIB' },
+            { id: '198001012005011001', username: 'dosen1', password: 'password', role: 'dosen', name: 'Dr. Budi Santoso', department: 'Agribisnis', nip: '198001012005011001', email: 'budi.santoso@sriwigama.ac.id', phone: '081298765432', address: 'Jl. Merdeka No. 1, Palembang', gender: 'Laki-laki', firstAccess: 'Rabu, 3 Juni 2026 09:15:00 WIB', lastAccess: 'Senin, 22 Juni 2026 15:17:10 WIB' },
+            { id: '2021001', username: 'mhs1', password: 'password', role: 'mahasiswa', name: 'Andi Saputra', major: 'Agribisnis', semester: 3, nip: '2021001', email: 'andi@mhs.sriwigama.ac.id', phone: '085712345678', address: 'Jl. Mawar No. 3, Palembang', gender: 'Laki-laki', firstAccess: 'Senin, 8 Juni 2026 11:20:00 WIB', lastAccess: 'Senin, 22 Juni 2026 15:17:35 WIB' },
+            { id: '2021002', username: 'mhs2', password: 'password', role: 'mahasiswa', name: 'Siti Rahma', major: 'Agroteknologi', semester: 3, nip: '2021002', email: 'siti.rahma@mhs.sriwigama.ac.id', phone: '081298887766', address: 'Jl. Melati No. 10, Palembang', gender: 'Perempuan', firstAccess: 'Selasa, 9 Juni 2026 10:15:00 WIB', lastAccess: 'Senin, 22 Juni 2026 14:10:00 WIB' },
+            { id: '2021003', username: 'mhs3', password: 'password', role: 'mahasiswa', name: 'Rian Hidayat', major: 'Agroteknologi', semester: 1, nip: '2021003', email: 'rian@mhs.sriwigama.ac.id', phone: '089988776655', address: 'Jl. Kenanga No. 4, Palembang', gender: 'Laki-laki', firstAccess: 'Rabu, 10 Juni 2026 14:00:00 WIB', lastAccess: '-' }
         ];
 
         let courses = [
             { 
-                id: 'c1', title: 'Pengantar Ilmu Pertanian', lecturerId: '198001012005011001', department: 'Agribisnis', enrolled: ['2021001'], 
-                modules: [{ id: 'm1', title: 'Modul 1: Sejarah Pertanian', content: 'Pertanian dimulai sejak zaman prasejarah...', fileName: 'Modul_1_Sejarah.pdf' }],
+                id: 'c1', title: 'Pengantar Ilmu Pertanian', lecturerId: '198001012005011001', department: 'Agribisnis', enrolled: ['2021001', '2021002'], 
+                modules: [
+                    { id: 'm1', title: 'Modul 1: Sejarah Pertanian', content: 'Pertanian dimulai sejak zaman prasejarah ketika manusia mulai menetap dan bercocok tanam secara teratur. Perkembangan ini mengubah peradaban manusia dari pemburu pengumpul menjadi produsen pangan mandiri.', fileName: 'Modul_Sejarah.pdf', fileType: 'application/pdf', fileUrl: '#' }
+                ],
                 quizzes: [
                     { id: 'q1', title: 'Kuis Evaluasi Modul 1', questions: [
-                        { q: 'Kapan pertanian mulai dikenal manusia?', options: ['Zaman Modern', 'Zaman Prasejarah', 'Abad Pertengahan', 'Era Industri'], answer: 1 }
+                        { q: 'Tanaman pangan apa yang menjadi komoditas rawa pasang surut?', options: ['Gandum', 'Padi', 'Kurma', 'Apel'], answer: 1 }
                     ]}
-                ],
-                quizScores: { 'q1': { '2021001': 100 } } 
+                ], 
+                quizScores: {} 
             },
-            { id: 'c2', title: 'Dasar-dasar Agronomi', lecturerId: '197502022000032001', department: 'Agroteknologi', enrolled: ['2021001', '2021002'], modules: [], quizzes: [], quizScores: {} },
-            { id: 'c3', title: 'Ekonomi Pertanian', lecturerId: '198001012005011001', department: 'Agribisnis', enrolled: [], modules: [], quizzes: [], quizScores: {} },
+            {
+                id: 'c2', title: 'Dasar-dasar Agronomi', lecturerId: '198001012005011001', department: 'Agroteknologi', enrolled: ['2021001'], modules: [], quizzes: [], quizScores: {}
+            }
         ];
 
-        let systemLogs = [];
+        let systemLogs = [
+            { time: 'Senin, 22 Juni 2026 pukul 15:16:45 WIB', role: 'admin', user: 'Administrator', action: 'Login ke sistem' }
+        ];
+        
         let currentUser = null;
         let activeTab = 'dashboard';
         let selectedCourse = null;
-        
-        let isSidebarOpen = true; // Status Sidebar untuk Desktop
+        let isSidebarOpen = true;
 
-        // States Tambahan
+        // State UI & Editor
         let editingModule = null;
         let adminEditingUser = null; 
-        let adminResettingUser = null; 
-        let dosenEditingCourse = null; 
+        let adminResettingUser = null;
+        let dosenEditingCourse = null; // Bisa berupa ID kelas atau 'NEW'
         let logFilterRole = 'all';
         let manageUserFilter = 'all';
         let clockInterval = null;
-        let profileSuccessMsg = '';
+        let activeDetailedModule = null;
 
-        // Status untuk Kuis
-        let isEditingQuiz = false; 
-        let currentQuizData = null; 
-        let takingQuizId = null; 
+        // Status untuk Kuis & Upload Berkas Langsung
+        let activeQuizEditId = null; 
+        let activeQuizTakeId = null; 
+        let quizFormState = { title: '', questions: [] };
+        let quizTakerAnswers = {};
+        let uploadProgress = null; 
+        let activeModuleUploadId = null; 
+        let globalUploadProgress = 0;
 
         const appContainer = document.getElementById('app-container');
 
         // ==============================================================================
-        // 2. FUNGSI UTILITAS & PENCATATAN LOG
+        // 2. FUNGSI UTILITAS, NOTIFIKASI TOAST & DIALOG KUSTOM
         // ==============================================================================
-        
         function getFormattedTime() {
             const now = new Date();
-            return now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit', second:'2-digit' }) + ' WIB';
+            const weekday = now.toLocaleDateString('id-ID', { weekday: 'long' });
+            const day = now.getDate();
+            const month = now.toLocaleDateString('id-ID', { month: 'long' });
+            const year = now.getFullYear();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            return `${weekday}, ${day} ${month} ${year} ${hours}:${minutes}:${seconds} WIB`;
         }
 
         function addLog(action, userObj) {
-            systemLogs.unshift({
-                time: getFormattedTime(),
-                role: userObj.role,
-                user: userObj.name,
-                action: action
-            });
+            const timeStr = getFormattedTime();
+            systemLogs.unshift({ time: timeStr, role: userObj.role, user: userObj.name, action: action });
+        }
+
+        // Notification Toast Kustom
+        window.showNotification = function(msg, type='success') {
+            const container = document.createElement('div');
+            container.className = `fixed bottom-5 right-5 z-[9999] p-4 rounded-xl shadow-2xl border flex items-center gap-3 fade-in ${
+                type === 'error' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-green-50 border-green-200 text-green-800'
+            }`;
+            container.innerHTML = `
+                <i class="fas ${type === 'error' ? 'fa-times-circle text-red-500' : 'fa-check-circle text-green-500'} text-lg"></i>
+                <span class="text-sm font-semibold">${msg}</span>
+            `;
+            document.body.appendChild(container);
+            setTimeout(() => {
+                container.style.opacity = '0';
+                container.style.transition = 'opacity 0.4s ease-out';
+                setTimeout(() => container.remove(), 400);
+            }, 3000);
+        }
+
+        // Dialog Konfirmasi Modal Kustom
+        window.showConfirmModal = function(message, onConfirm) {
+            const modal = document.getElementById('confirm-modal');
+            const msgEl = document.getElementById('confirm-modal-message');
+            const btnOk = document.getElementById('confirm-modal-ok');
+            const btnCancel = document.getElementById('confirm-modal-cancel');
+
+            msgEl.innerHTML = message;
+            modal.classList.remove('hidden');
+
+            btnCancel.onclick = () => {
+                modal.classList.add('hidden');
+            };
+
+            btnOk.onclick = () => {
+                onConfirm();
+                modal.classList.add('hidden');
+            };
+        }
+
+        // Dialog Alert Modal Kustom
+        window.showAlertModal = function(message, title='Informasi') {
+            const modal = document.getElementById('alert-modal');
+            const titleEl = document.getElementById('alert-modal-title');
+            const msgEl = document.getElementById('alert-modal-message');
+
+            titleEl.innerText = title;
+            msgEl.innerHTML = message;
+            modal.classList.remove('hidden');
+        }
+
+        window.closeAlertModal = function() {
+            document.getElementById('alert-modal').classList.add('hidden');
         }
 
         function render() {
-            if (!currentUser) { renderLogin(); } 
-            else { renderMainLayout(); }
+            if (!currentUser) { 
+                renderLogin(); 
+            } else { 
+                renderMainLayout(); 
+            }
         }
 
         // ==============================================================================
@@ -107,381 +206,614 @@
         // ==============================================================================
         function renderLogin() {
             appContainer.innerHTML = `
-                <div class="min-h-screen bg-green-50 flex items-center justify-center p-4">
-                    <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border-t-4 border-green-600 fade-in">
+                <div class="min-h-screen bg-[#f0fdf4] flex items-center justify-center p-4">
+                    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border-t-4 border-green-700 fade-in">
                         <div class="flex flex-col items-center mb-6">
-                            <img src="Logo STIPER.jpg" alt="Logo STIPER SRIWIGAMA" class="h-24 w-auto object-contain mb-3" onerror="this.onerror=null; this.src='https://placehold.co/100x100/166534/FFF?text=Logo';">
-                            <h1 class="text-2xl font-bold text-gray-800 text-center">STIPER SRIWIGAMA</h1>
-                            <p class="text-gray-500 text-sm">Portal E-Learning</p>
+                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-green-750 text-3xl mb-3 shadow-inner">
+                                <i class="fas fa-graduation-cap text-[#0e5c32]"></i>
+                            </div>
+                            <h1 class="text-2xl font-black text-gray-800 text-center tracking-tight">STIPER SRIWIGAMA</h1>
+                            <p class="text-gray-500 text-xs italic mt-0.5">Sistem Manajemen Pembelajaran & Akademik</p>
                         </div>
                         
                         <div id="login-error" class="hidden bg-red-100 text-red-600 p-3 rounded mb-4 text-sm text-center"></div>
                         
                         <form id="login-form" class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                                <input type="text" id="username" class="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="Masukkan username" required>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
+                                    <i class="fas fa-user-circle text-lg"></i>
+                                </span>
+                                <input type="text" id="username" class="w-full p-3.5 pl-11 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none border-gray-300 text-sm" placeholder="Username / NIP / NIM" required>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                                <input type="password" id="password" class="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 outline-none" placeholder="Masukkan password" required>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
+                                    <i class="fas fa-lock text-lg"></i>
+                                </span>
+                                <input type="password" id="password" class="w-full p-3.5 pl-11 pr-10 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none border-gray-300 text-sm" placeholder="Kata Sandi" required>
+                                <button type="button" onclick="togglePass()" class="absolute right-3 top-4 text-gray-400 hover:text-green-600"><i id="eye" class="fas fa-eye"></i></button>
                             </div>
-                            <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 rounded hover:bg-green-700 transition duration-200">Masuk</button>
+                            <button type="submit" class="w-full bg-[#0e5c32] hover:bg-[#094122] text-white font-bold py-3.5 rounded-lg shadow-md transition text-sm tracking-wide">MASUK</button>
                         </form>
+                        
+                        <div class="mt-5 bg-blue-50 border border-blue-100 p-4 rounded-xl text-xs flex items-start gap-3">
+                            <i class="fas fa-info-circle text-base text-blue-600 mt-0.5 shrink-0 animate-pulse"></i>
+                            <span class="text-blue-900 leading-relaxed font-medium">
+                                Butuh bantuan akses? Silakan hubungi admin akademik atau pusat layanan kampus STIPER Sriwigama.
+                            </span>
+                        </div>
+                    </div>
+                </div>`;
+            
+            document.getElementById('login-form').onsubmit = (e) => {
+                e.preventDefault();
+                const uInput = document.getElementById('username').value.trim();
+                const pInput = document.getElementById('password').value;
+                const user = users.find(x => x.username === uInput || x.id === uInput);
+                
+                if (user && user.password === pInput) { 
+                    currentUser = user; 
+                    currentUser.lastAccess = getFormattedTime();
+                    addLog('Login ke sistem', currentUser); 
+                    showNotification('Selamat datang kembali!', 'success');
+                    render(); 
+                } else {
+                    showNotification('ID Pengguna atau Kata Sandi salah!', 'error');
+                }
+            };
+        }
 
-                        <div class="mt-6">
-                            <div class="relative"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-300"></div></div><div class="relative flex justify-center text-sm"><span class="px-2 bg-white text-gray-500">Akun Demo</span></div></div>
-                            <div class="mt-4 text-xs text-gray-500 text-center space-y-1">
-                                <p><strong>Admin:</strong> admin | password</p>
-                                <p><strong>Dosen:</strong> dosen1, dosen2 | password</p>
-                                <p><strong>Mahasiswa:</strong> mhs1, mhs2 | password</p>
+        window.togglePass = () => {
+            const p = document.getElementById('password');
+            const e = document.getElementById('eye');
+            p.type = p.type === 'password' ? 'text' : 'password';
+            e.className = p.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+        };
+
+        // ==============================================================================
+        // 4. KERANGKA UTAMA APLIKASI
+        // ==============================================================================
+        function renderMainLayout() {
+            const sidebarClass = isSidebarOpen ? 'w-64 md:relative absolute z-40' : 'w-0 md:w-20 overflow-hidden';
+            const userRoleLabel = currentUser.role === 'admin' ? 'Administrator' : (currentUser.role === 'dosen' ? 'Dosen' : 'Mahasiswa');
+
+            appContainer.innerHTML = `
+                <nav class="bg-[#0e5c32] text-white h-16 shrink-0 flex items-center justify-between px-4 md:px-8 shadow-lg border-b border-[#083c20]">
+                    <div class="flex items-center space-x-4">
+                        <button onclick="isSidebarOpen=!isSidebarOpen; render();" class="text-white hover:bg-[#094122] p-2 rounded-lg transition"><i class="fas fa-bars text-xl"></i></button>
+                        <div class="hidden sm:block">
+                            <h2 class="font-bold text-lg leading-none">E-LMS STIPER</h2>
+                            <p id="live-clock" class="text-[11px] text-green-300 mt-1"></p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="text-right hidden md:block">
+                            <p class="text-sm font-bold leading-tight">${currentUser.name}</p>
+                            <p class="text-[10px] text-green-300 uppercase font-semibold">${userRoleLabel}</p>
+                        </div>
+                        <div class="relative">
+                            <button onclick="document.getElementById('drop').classList.toggle('hidden')" class="bg-[#094122] p-2 px-3 rounded-lg border border-[#166534] flex items-center space-x-2 transition hover:bg-[#07311a]">
+                                <i class="far fa-user text-sm"></i> <i class="fas fa-chevron-down text-[10px]"></i>
+                            </button>
+                            <div id="drop" class="absolute right-0 mt-2 w-48 bg-white text-gray-800 rounded-lg shadow-xl border border-gray-100 hidden z-50 overflow-hidden">
+                                <button onclick="activeTab='profile'; document.getElementById('drop').classList.add('hidden'); render();" class="w-full text-left p-3 hover:bg-gray-50 flex items-center text-sm font-medium"><i class="far fa-user-circle mr-2 text-green-600"></i> Profil & Aktivitas</button>
+                                <hr class="border-gray-100">
+                                <button onclick="logout();" class="w-full text-left p-3 hover:bg-red-50 text-red-600 flex items-center text-sm font-semibold"><i class="fas fa-sign-out-alt mr-2 text-red-500"></i> Keluar</button>
                             </div>
                         </div>
                     </div>
+                </nav>
+                <div class="flex flex-grow overflow-hidden">
+                    <aside class="${sidebarClass} bg-white border-r h-full transition-all duration-300 shadow-sm z-30 flex flex-col justify-between shrink-0">
+                        <div class="p-3 space-y-2 mt-4" id="side-menu"></div>
+                    </aside>
+                    <main class="flex-grow overflow-y-auto p-4 md:p-8 no-scrollbar flex flex-col justify-between min-w-0" id="main-content-wrapper">
+                        <div id="main-content" class="w-full flex-grow"></div>
+                        
+                        <!-- Footer Hak Cipta -->
+                        <footer class="mt-12 pt-6 border-t border-gray-200 text-center text-xs text-gray-500 font-medium">
+                            © 2026 Sekolah Tinggi Ilmu Pertanian (STIPER) SRIWIGAMA Palembang. Seluruh Hak Cipta Dilindungi.
+                        </footer>
+                    </main>
                 </div>
-            `;
-
-            document.getElementById('login-form').addEventListener('submit', (e) => {
-                e.preventDefault();
-                const u = document.getElementById('username').value;
-                const p = document.getElementById('password').value;
-                const user = users.find(x => x.username === u && x.password === p);
                 
-                if (user) {
-                    currentUser = user;
-                    currentUser.lastAccess = getFormattedTime();
-                    addLog('Login ke sistem', currentUser);
-                    activeTab = 'dashboard';
-                    render();
+                <!-- Modal Detail Modul -->
+                <div id="modal-module-detail" class="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 fade-in hidden"></div>
+                
+                <!-- Modal Tambah/Edit Kelas (CRUD Admin & Dosen) -->
+                <div id="modal-course-crud" class="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 fade-in hidden"></div>`;
+                
+            renderSideMenu();
+            renderContent();
+            startClock();
+        }
+
+        function renderSideMenu() {
+            const menu = document.getElementById('side-menu');
+            const items = [
+                { id: 'dashboard', label: 'Beranda', icon: 'fa-home' },
+                { id: 'courses', label: 'Mata Kuliah', icon: 'fa-book-open' }
+            ];
+            if(currentUser.role === 'mahasiswa') items.push({ id: 'reports', label: 'Laporan', icon: 'fa-chart-pie' });
+            if(currentUser.role === 'admin') {
+                items.push({ id: 'users', label: 'Kelola Pengguna', icon: 'fa-users-cog' });
+                items.push({ id: 'system-logs', label: 'Log Sistem', icon: 'fa-list' });
+            }
+
+            menu.innerHTML = items.map(i => {
+                const isActive = activeTab === i.id;
+                // Sidebar active styling is precise, modern, and flexible
+                const activeStyle = isActive 
+                    ? 'bg-emerald-50 text-emerald-800 font-bold border-l-4 border-emerald-600 shadow-sm shadow-emerald-50/50' 
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800 border-l-4 border-transparent';
+                
+                return `
+                    <button onclick="activeTab='${i.id}'; selectedCourse=null; render();" class="w-full flex items-center p-3 rounded-r-xl transition-all duration-200 ${activeStyle}">
+                        <i class="fas ${i.icon} w-6 text-lg"></i> 
+                        <span class="${isSidebarOpen ? 'block' : 'hidden'} ml-3 whitespace-nowrap text-sm">${i.label}</span>
+                    </button>`;
+            }).join('');
+        }
+
+        function startClock() {
+            const el = document.getElementById('live-clock');
+            if(el) el.innerText = getFormattedTime();
+            if(clockInterval) clearInterval(clockInterval);
+            clockInterval = setInterval(() => { if(el) el.innerText = getFormattedTime(); }, 1000);
+        }
+
+        function logout() {
+            addLog('Logout dari sistem', currentUser);
+            currentUser = null;
+            render();
+        }
+
+        // ==============================================================================
+        // 5. ROUTER UTAMA
+        // ==============================================================================
+        function renderContent() {
+            const main = document.getElementById('main-content');
+            if (activeTab === 'dashboard') {
+                renderDashboard(main);
+            } 
+            else if (activeTab === 'courses' && !selectedCourse) {
+                renderCourseList(main);
+            } 
+            else if (selectedCourse) {
+                renderCourseDetail(main);
+            } 
+            else if (activeTab === 'users' && currentUser.role === 'admin') {
+                renderManageUsers(main);
+            }
+            else if (activeTab === 'profile') {
+                renderProfile(main);
+            }
+            else if (activeTab === 'reports' && currentUser.role === 'mahasiswa') {
+                main.innerHTML = getReportsHTML();
+            }
+            else if (activeTab === 'system-logs' && currentUser.role === 'admin') {
+                main.innerHTML = getSystemLogsHTML();
+                initClock();
+            }
+        }
+
+        // ==============================================================================
+        // 6. BERANDA (DASHBOARD)
+        // ==============================================================================
+        function renderDashboard(container) {
+            const totalMateri = courses.reduce((acc, curr) => acc + (curr.modules ? curr.modules.length : 0), 0);
+
+            container.innerHTML = `
+                <div class="max-w-4xl fade-in">
+                    <h1 class="text-2xl font-black text-gray-800">Selamat Datang, <span class="text-[#0e5c32]">${currentUser.name}</span></h1>
+                    <p class="text-gray-500 mt-2 text-sm leading-relaxed">Portal Sistem Informasi Manajemen Akademik & E-Learning Sekolah Tinggi Ilmu Pertanian (STIPER) Sriwigama Palembang.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+                            <div class="p-4 bg-purple-50 text-purple-600 rounded-xl"><i class="fas fa-users text-3xl"></i></div>
+                            <div>
+                                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Pengguna</h3>
+                                <p class="text-2xl font-black text-gray-800">${users.length}</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+                            <div class="p-4 bg-green-50 text-[#0e5c32] rounded-xl"><i class="fas fa-chalkboard-teacher text-3xl"></i></div>
+                            <div>
+                                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Mata Kuliah</h3>
+                                <p class="text-2xl font-black text-gray-800">${courses.length}</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+                            <div class="p-4 bg-blue-50 text-blue-600 rounded-xl"><i class="fas fa-file-alt text-3xl"></i></div>
+                            <div>
+                                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Berkas Materi</h3>
+                                <p class="text-2xl font-black text-gray-800">${totalMateri}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-100 p-6 rounded-2xl mt-8">
+                        <h4 class="font-bold text-yellow-800 flex items-center gap-2 text-sm"><i class="fas fa-bullhorn text-lg"></i> Petunjuk Pengoperasian Portal</h4>
+                        <p class="text-xs text-yellow-700 leading-relaxed mt-2">Dosen pengampu & Administrator dapat mengelola materi kuliah secara langsung di halaman detail mata kuliah. Mahasiswa dapat melihat daftar tugas, kuis aktif, mengunduh file, serta melihat rekap nilai pengerjaan kuis pada tab Laporan.</p>
+                    </div>
+                </div>`;
+        }
+
+        // ==============================================================================
+        // 7. PROFIL AKUN & RIWAYAT AKTIVITAS
+        // ==============================================================================
+        function renderProfile(container) {
+            const isAdmin = currentUser.role === 'admin';
+            const idLabel = currentUser.role === 'mahasiswa' ? 'NIM' : (currentUser.role === 'dosen' ? 'NIP' : 'NIP / ID');
+            const depLabel = currentUser.role === 'mahasiswa' ? 'Program Studi' : 'Departemen / Divisi';
+            const depValue = currentUser.role === 'mahasiswa' ? (currentUser.major || '-') : (currentUser.department || 'Akademik');
+
+            container.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl fade-in">
+                    <!-- Kartu Detail Profil -->
+                    <div class="lg:col-span-2 bg-white p-6 md:p-8 rounded-2xl border shadow-sm">
+                        <h2 class="text-xl font-bold mb-6 flex items-center text-gray-800 border-b pb-3"><i class="far fa-user-circle text-green-700 mr-2 text-2xl"></i> Pengaturan Informasi Profil</h2>
+                        
+                        <form id="profile-update-form" onsubmit="handleProfileUpdate(event)" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- ID Pengguna Sembunyi khusus Admin -->
+                                <div class="${isAdmin ? 'hidden' : ''}">
+                                    <label class="text-xs font-bold text-gray-400 block mb-1">ID / ${idLabel}</label>
+                                    <input type="text" value="${currentUser.id}" disabled class="w-full p-2.5 border rounded-lg bg-gray-50 text-gray-500 font-semibold cursor-not-allowed text-sm">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-gray-400 block mb-1">NAMA LENGKAP</label>
+                                    <input type="text" id="prof-name" value="${currentUser.name}" required class="w-full p-2.5 border rounded-lg focus:ring-1 focus:ring-green-500 outline-none border-gray-300 hover:border-gray-400 text-sm font-semibold">
+                                </div>
+                                <div class="${isAdmin ? 'hidden' : ''}">
+                                    <label class="text-xs font-bold text-gray-400 block mb-1">${depLabel}</label>
+                                    <input type="text" value="${depValue}" disabled class="w-full p-2.5 border rounded-lg bg-gray-50 text-gray-500 font-semibold cursor-not-allowed text-sm">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-gray-400 block mb-1">EMAIL AKADEMIK</label>
+                                    <input type="email" id="prof-email" value="${currentUser.email || ''}" required class="w-full p-2.5 border rounded-lg focus:ring-1 focus:ring-green-500 outline-none border-gray-300 hover:border-gray-400 text-sm">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-gray-400 block mb-1">NOMOR TELEPON</label>
+                                    <input type="text" id="prof-phone" value="${currentUser.phone || ''}" class="w-full p-2.5 border rounded-lg focus:ring-1 focus:ring-green-500 outline-none border-gray-300 hover:border-gray-400 text-sm">
+                                </div>
+                                <!-- Dropdown Gender Sembunyi khusus Admin -->
+                                <div class="${isAdmin ? 'hidden' : ''}">
+                                    <label class="text-xs font-bold text-gray-400 block mb-1">JENIS KELAMIN</label>
+                                    <select id="prof-gender" class="w-full p-2.5 border rounded-lg bg-white outline-none focus:ring-1 focus:ring-green-500 text-sm border-gray-300">
+                                        <option value="Laki-laki" ${currentUser.gender === 'Laki-laki' ? 'selected' : ''}>Laki-laki</option>
+                                        <option value="Perempuan" ${currentUser.gender === 'Perempuan' ? 'selected' : ''}>Perempuan</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="text-xs font-bold text-gray-400 block mb-1">ALAMAT TINGGAL</label>
+                                <textarea id="prof-address" class="w-full p-2.5 border rounded-lg focus:ring-1 focus:ring-green-500 outline-none border-gray-300 hover:border-gray-400 text-sm h-16 resize-none">${currentUser.address || ''}</textarea>
+                            </div>
+
+                            <div class="border-t border-gray-100 pt-4">
+                                <h3 class="text-xs font-black text-gray-400 uppercase tracking-wider mb-2"><i class="fas fa-lock mr-1"></i> Keamanan Akun</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="text-xs font-semibold text-gray-500 block mb-1">Password Baru (Abaikan jika tidak diganti)</label>
+                                        <input type="password" id="prof-password" class="w-full p-2.5 border rounded-lg focus:ring-1 focus:ring-green-500 outline-none border-gray-300 text-sm" placeholder="Masukkan password baru">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-2">
+                                <button type="submit" class="w-full md:w-auto bg-[#0e5c32] hover:bg-[#094122] text-white font-bold px-6 py-2.5 rounded-lg shadow transition text-sm">
+                                    Simpan Perubahan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Kartu Informasi "Aktivitas Log Masuk" & Otentikasi Personal -->
+                    <div class="bg-white p-6 rounded-2xl border shadow-sm flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800 border-b pb-3 mb-4 flex items-center"><i class="fas fa-shield-alt mr-2 text-green-700"></i> Aktivitas Log Masuk</h3>
+                            <div class="space-y-4">
+                                <div class="p-3.5 bg-green-50 rounded-xl border border-green-100">
+                                    <p class="text-[10px] font-black text-green-700 uppercase tracking-widest mb-1">Akses Pertama Terdaftar</p>
+                                    <p class="text-xs text-green-900 font-bold leading-tight">${currentUser.firstAccess || '-'}</p>
+                                </div>
+                                <div class="p-3.5 bg-blue-50 rounded-xl border border-blue-100">
+                                    <p class="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-1">Akses Terakhir ke Situs</p>
+                                    <p class="text-xs text-blue-900 font-bold leading-tight">${currentUser.lastAccess || '-'}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Otentikasi Personal hanya bisa dilihat oleh Admin -->
+                        <div class="mt-6 ${isAdmin ? 'block' : 'hidden'}">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"><i class="fas fa-history mr-1"></i> Otentikasi Personal (Admin Only)</h4>
+                            <div class="overflow-x-auto rounded border no-scrollbar max-h-48 overflow-y-auto">
+                                <table class="w-full text-left text-[11px]">
+                                    <tbody id="personal-login-tbody" class="divide-y divide-gray-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            renderPersonalLogs();
+        }
+
+        window.handleProfileUpdate = function(e) {
+            e.preventDefault();
+            const email = document.getElementById('prof-email').value;
+            const phone = document.getElementById('prof-phone').value;
+            const address = document.getElementById('prof-address').value;
+            const pass = document.getElementById('prof-password').value;
+
+            currentUser.email = email;
+            currentUser.phone = phone;
+            currentUser.address = address;
+            currentUser.name = document.getElementById('prof-name').value;
+
+            if (currentUser.role !== 'admin') {
+                currentUser.gender = document.getElementById('prof-gender').value;
+            }
+
+            if(pass.trim() !== '') {
+                currentUser.password = pass;
+            }
+
+            const idx = users.findIndex(u => u.id === currentUser.id);
+            if (idx !== -1) users[idx] = currentUser;
+
+            addLog('Mengubah data profil akun', currentUser);
+            showNotification('Profil Anda berhasil diperbarui!', 'success');
+            render();
+        };
+
+        function renderPersonalLogs() {
+            const tbody = document.getElementById('personal-login-tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+
+            const logs = systemLogs.filter(l => l.role === 'admin'); // Tampilkan aktivitas admin
+            if(logs.length === 0) {
+                tbody.innerHTML = `<tr><td class="p-3 text-center text-gray-400">Belum ada riwayat otentikasi.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = logs.map(l => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-2.5 font-semibold text-gray-700 leading-tight">${l.time}<br><span class="text-[9px] text-gray-400">${l.user}</span></td>
+                    <td class="p-2.5 text-right text-green-600 font-bold">${l.action}</td>
+                </tr>`).join('');
+        }
+
+        // ==============================================================================
+        // 8. LISTING KELAS & MATERI
+        // ==============================================================================
+        function renderCourseList(container) {
+            const isDosen = currentUser.role === 'dosen';
+            const isAdmin = currentUser.role === 'admin';
+            
+            let topBar = `<div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4 fade-in"><h2 class="text-2xl font-black text-gray-800">Mata Kuliah Kampus</h2>`;
+            if (isDosen || isAdmin) {
+                topBar += `<button onclick="triggerCreateCourse();" class="bg-green-700 hover:bg-green-800 text-white px-4 py-2.5 rounded-xl shadow-md text-sm font-bold transition flex items-center gap-2 w-fit"><i class="fas fa-plus"></i> Tambah Kelas</button>`;
+            }
+            topBar += `</div>`;
+
+            let html = topBar + '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 fade-in">';
+            
+            courses.forEach(course => {
+                const isEnrolled = course.enrolled.includes(currentUser.id);
+                const isMyCourse = course.lecturerId === currentUser.id;
+                
+                // Jika Dosen, hanya tampilkan kelas miliknya
+                if (isDosen && !isMyCourse) return;
+                
+                const lecturer = users.find(u => u.id === course.lecturerId);
+                const totalMateri = course.modules ? course.modules.length : 0;
+                const totalKuis = course.quizzes ? course.quizzes.length : 0;
+                
+                let btnHtml = '';
+                if (currentUser.role === 'mahasiswa' && !isEnrolled) {
+                    btnHtml = `<button onclick="event.stopPropagation(); enrollCourse('${course.id}')" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold transition shrink-0">Ikuti Kelas</button>`;
                 } else {
-                    const err = document.getElementById('login-error');
-                    err.textContent = 'Username atau password salah!';
-                    err.classList.remove('hidden');
+                    const btnText = (isDosen || isAdmin) ? 'Kelola Kelas' : 'Masuk Kelas';
+                    btnHtml = `<button onclick="openCourse('${course.id}')" class="text-xs bg-green-50 text-green-700 hover:bg-green-100 px-4 py-2.5 rounded-xl font-bold flex items-center transition shrink-0">${btnText} <i class="fas fa-chevron-right ml-2 text-[10px]"></i></button>`;
                 }
+
+                // Pengelolaan Mata Kuliah (Dosen Milik Sendiri ATAU Admin Penuh)
+                let managementActions = '';
+                if ((isDosen && isMyCourse) || isAdmin) {
+                    managementActions = `
+                        <div class="absolute top-2 right-2 flex space-x-1 z-10">
+                            <button onclick="event.stopPropagation(); triggerEditCourse('${course.id}');" class="bg-white/90 text-blue-600 p-2 rounded shadow hover:bg-white text-xs"><i class="fas fa-edit"></i></button>
+                            <button onclick="event.stopPropagation(); deleteCourse('${course.id}')" class="bg-white/90 text-red-600 p-2 rounded shadow hover:bg-white text-xs"><i class="fas fa-trash"></i></button>
+                        </div>`;
+                }
+
+                html += `
+                    <div onclick="openCourse('${course.id}')" class="bg-white rounded-2xl border border-gray-150 overflow-hidden relative group transition hover:shadow-md cursor-pointer flex flex-col justify-between">
+                        ${managementActions}
+                        ${isAdmin ? `<div class="absolute top-2 left-2 bg-purple-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-sm z-10">AKSES ADMIN</div>` : ''}
+                        
+                        <div>
+                            <div class="h-32 bg-[#0e5c32] flex items-center justify-center">
+                                <i class="fas fa-chalkboard text-4xl text-white opacity-40"></i>
+                            </div>
+                            <div class="p-5">
+                                <h3 class="font-bold text-lg text-gray-800 mb-1 truncate">${course.title}</h3>
+                                <p class="text-xs text-gray-400 mb-4 font-semibold uppercase tracking-wider">${course.department} &bull; ${lecturer ? lecturer.name : 'Unknown'}</p>
+                            </div>
+                        </div>
+
+                        <div class="p-5 pt-0">
+                            <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-gray-100">
+                                <span class="text-xs font-semibold bg-gray-50 text-gray-600 px-2.5 py-1.5 rounded-lg shrink-0">${totalMateri} Materi | ${totalKuis} Kuis</span>
+                                ${btnHtml}
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        window.deleteCourse = function(courseId) {
+            showConfirmModal('Apakah Anda yakin ingin menghapus kelas ini beserta seluruh materi, kuis, dan data peserta secara permanen?', () => {
+                courses = courses.filter(c => c.id !== courseId);
+                showNotification('Mata kuliah berhasil dihapus dari sistem.', 'success');
+                render();
             });
         }
 
-        // ==============================================================================
-        // 4. KERANGKA UTAMA APLIKASI (NAVBAR & SIDEBAR)
-        // ==============================================================================
-        function renderMainLayout() {
-            const sidebarClass = isSidebarOpen 
-                ? 'w-64 absolute md:relative z-40 h-full border-r shadow-xl md:shadow-none bg-white transition-all duration-300' 
-                : 'w-0 md:w-20 overflow-hidden border-r bg-white h-full transition-all duration-300';
-
-            appContainer.innerHTML = `
-                <div class="flex flex-col h-screen fade-in bg-gray-100">
-                    <!-- NAVBAR ATAS -->
-                    <nav class="bg-white border-b-4 border-green-600 shadow-sm z-50 shrink-0">
-                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                            <div class="flex justify-between h-16">
-                                <div class="flex items-center">
-                                    <button onclick="toggleSidebar()" class="mr-4 p-2 rounded-md hover:bg-green-100 text-gray-600 outline-none cursor-pointer" title="Toggle Sidebar">
-                                        <i class="fas fa-bars text-xl"></i>
-                                    </button>
-                                    <i class="fas fa-leaf text-2xl text-green-700 mr-3 hidden sm:block"></i>
-                                    <span class="font-bold text-lg md:text-xl text-green-800 hidden sm:block">STIPER SRIWIGAMA</span>
-                                </div>
-                                <div class="flex items-center space-x-2 md:space-x-3">
-                                    <button onclick="changeTab('profile')" class="flex items-center space-x-2 bg-green-100 hover:bg-green-200 text-green-800 px-3 md:px-4 py-2 rounded-full transition-colors border border-green-200">
-                                        <div class="bg-green-600 text-white p-1 rounded-full text-xs w-6 h-6 flex items-center justify-center"><i class="fas fa-user"></i></div>
-                                        <span class="text-sm font-medium hidden md:block max-w-[150px] truncate">${currentUser.name}</span>
-                                    </button>
-                                    <button onclick="logout()" class="flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-2 rounded-md transition-colors border border-red-200" title="Keluar">
-                                        <i class="fas fa-sign-out-alt"></i>
-                                        <span class="text-sm font-medium hidden sm:block">Keluar</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </nav>
-
-                    <div class="flex flex-1 overflow-hidden relative w-full">
-                        <!-- SIDEBAR KIRI -->
-                        <aside id="sidebar" class="${sidebarClass}">
-                            <div class="p-3 space-y-2 mt-2" id="sidebar-menu">
-                            </div>
-                        </aside>
-
-                        <!-- KONTEN UTAMA KANAN -->
-                        <main class="flex-1 overflow-y-auto p-4 md:p-6 w-full" id="main-content">
-                        </main>
-                        
-                        ${isSidebarOpen ? `<div class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30" onclick="toggleSidebar()"></div>` : ''}
-                    </div>
-                </div>
-            `;
-            renderSidebarMenu();
-            renderContent();
+        // Modern Visual popup modal untuk Tambah / Edit Kelas
+        window.triggerCreateCourse = function() {
+            renderCourseCrudModal('NEW');
         }
 
-        // --- Render Isi Sidebar ---
-        function renderSidebarMenu() {
-            const menu = document.getElementById('sidebar-menu');
-            const alignClass = isSidebarOpen ? 'justify-start' : 'justify-center';
-            const mrClass = isSidebarOpen ? 'mr-3' : 'md:mr-0';
-            const textClass = isSidebarOpen ? 'block' : 'hidden'; 
+        window.triggerEditCourse = function(courseId) {
+            renderCourseCrudModal(courseId);
+        }
+
+        function renderCourseCrudModal(mode) {
+            const modal = document.getElementById('modal-course-crud');
+            const isNew = mode === 'NEW';
+            const course = isNew ? { title: '', department: currentUser.department || 'Agribisnis', lecturerId: currentUser.id } : courses.find(c => c.id === mode);
             
-            let html = `
-                <button onclick="changeTab('dashboard')" class="w-full flex items-center p-3 rounded ${activeTab === 'dashboard' ? 'bg-green-100 text-green-800 font-semibold' : 'text-gray-600 hover:bg-gray-100'} ${alignClass}" title="Beranda">
-                    <i class="fas fa-home w-5 ${mrClass}"></i>
-                    <span class="sidebar-text ${textClass} whitespace-nowrap">Beranda</span>
-                </button>
-            `;
-
-            const coursesLabel = currentUser.role === 'admin' ? 'Semua Kelas' : currentUser.role === 'dosen' ? 'Kelola Kelas' : 'Kelas Saya';
-            html += `
-                <button onclick="changeTab('courses')" class="w-full flex items-center p-3 rounded ${activeTab === 'courses' ? 'bg-green-100 text-green-800 font-semibold' : 'text-gray-600 hover:bg-gray-100'} ${alignClass}" title="${coursesLabel}">
-                    <i class="fas fa-chalkboard-teacher w-5 ${mrClass}"></i>
-                    <span class="sidebar-text ${textClass} whitespace-nowrap">${coursesLabel}</span>
-                </button>
-            `;
-
-            // Menu Khusus Mahasiswa (Laporan)
-            if (currentUser.role === 'mahasiswa') {
-                 html += `
-                    <button onclick="changeTab('reports')" class="w-full flex items-center p-3 rounded ${activeTab === 'reports' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100'} ${alignClass} mt-4 border-t border-gray-200" title="Laporan">
-                        <i class="fas fa-chart-line w-5 text-blue-600 ${mrClass}"></i>
-                        <span class="sidebar-text ${textClass} whitespace-nowrap">Laporan</span>
-                    </button>
-                `;
-            }
-
-            // Menu Khusus Admin
+            // Build Dosen Selector (Khusus Admin bisa merubah dosen pengampu)
+            let lecturerSelection = '';
             if (currentUser.role === 'admin') {
-                html += `
-                    <button onclick="changeTab('manage-users')" class="w-full flex items-center p-3 rounded ${activeTab === 'manage-users' ? 'bg-purple-100 text-purple-800 font-semibold' : 'text-gray-600 hover:bg-gray-100'} ${alignClass} mt-4 border-t border-gray-200" title="Kelola Pengguna">
-                        <i class="fas fa-users-cog w-5 text-purple-600 ${mrClass}"></i>
-                        <span class="sidebar-text ${textClass} whitespace-nowrap">Kelola Pengguna</span>
-                    </button>
-                    <button onclick="changeTab('system-logs')" class="w-full flex items-center p-3 rounded ${activeTab === 'system-logs' ? 'bg-gray-800 text-white font-semibold' : 'text-gray-600 hover:bg-gray-100'} ${alignClass}" title="Log Pengguna">
-                        <i class="fas fa-list w-5 ${activeTab === 'system-logs' ? 'text-gray-300' : 'text-gray-500'} ${mrClass}"></i>
-                        <span class="sidebar-text ${textClass} whitespace-nowrap">Log Pengguna</span>
-                    </button>
-                `;
-            }
-            menu.innerHTML = html;
-        }
-
-        // ==============================================================================
-        // 5. ROUTER (PENGATUR TAMPILAN KONTEN)
-        // ==============================================================================
-        function renderContent() {
-            if(clockInterval) { clearInterval(clockInterval); clockInterval = null; }
-
-            const main = document.getElementById('main-content');
-            main.innerHTML = '<div class="max-w-5xl mx-auto w-full" id="content-inner"></div>';
-            const inner = document.getElementById('content-inner');
-
-            if (activeTab === 'profile') {
-                inner.innerHTML = getProfileHTML();
-                attachProfileEvents();
-            } else if (activeTab === 'dashboard' && !selectedCourse) {
-                inner.innerHTML = getDashboardHTML();
-            } else if (activeTab === 'manage-users' && currentUser.role === 'admin') {
-                inner.innerHTML = getManageUsersHTML();
-                attachManageUsersEvents();
-                attachResetPasswordEvents();
-            } else if (activeTab === 'system-logs' && currentUser.role === 'admin') {
-                inner.innerHTML = getSystemLogsHTML();
-                initClock();
-            } else if (activeTab === 'reports' && currentUser.role === 'mahasiswa') {
-                inner.innerHTML = getReportsHTML();
-            } else if (activeTab === 'courses' && !selectedCourse) {
-                if (dosenEditingCourse) inner.innerHTML = getDosenCourseFormHTML();
-                else inner.innerHTML = getCoursesHTML();
-            } else if (selectedCourse) {
-                if (takingQuizId) inner.innerHTML = getQuizTakerHTML();
-                else if (isEditingQuiz) inner.innerHTML = getQuizEditorHTML();
-                else inner.innerHTML = getCourseDetailHTML();
-            }
-        }
-
-        // ==============================================================================
-        // 6. MENU BERANDA (DASHBOARD)
-        // ==============================================================================
-        function getDashboardHTML() {
-            const totalMateri = courses.reduce((acc, curr) => acc + (curr.modules ? curr.modules.length : 0), 0);
-            return `
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">Selamat Datang, <span class="text-green-700">${currentUser.name}</span></h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
-                        <div class="flex items-center">
-                            <div class="p-3 bg-blue-100 rounded-full mr-4"><i class="fas fa-book text-blue-600 text-xl"></i></div>
-                            <div><p class="text-sm text-gray-500 font-medium">Total Kelas</p><p class="text-2xl font-bold text-gray-800">${courses.length}</p></div>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
-                        <div class="flex items-center">
-                            <div class="p-3 bg-green-100 rounded-full mr-4"><i class="fas fa-file-alt text-green-600 text-xl"></i></div>
-                            <div><p class="text-sm text-gray-500 font-medium">Total Materi</p><p class="text-2xl font-bold text-gray-800">${totalMateri}</p></div>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
-                        <div class="flex items-center">
-                            <div class="p-3 bg-purple-100 rounded-full mr-4"><i class="fas fa-users text-purple-600 text-xl"></i></div>
-                            <div><p class="text-sm text-gray-500 font-medium">Pengguna</p><p class="text-2xl font-bold text-gray-800">${users.length}</p></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6 shadow-sm">
-                    <h3 class="text-lg font-bold text-yellow-800 mb-2"><i class="fas fa-bullhorn mr-2"></i>Pengumuman Kampus</h3>
-                    <p class="text-yellow-700">Pemberitahuan: Fitur ujian dan kuis untuk Dosen kini telah diaktifkan. Mahasiswa wajib memperhatikan jadwal kuis pada masing-masing kelas.</p>
-                </div>
-            `;
-        }
-
-        // ==============================================================================
-        // 7. MENU PROFIL PENGGUNA
-        // ==============================================================================
-        function getProfileHTML() {
-            let msgHtml = '';
-            if (profileSuccessMsg) {
-                msgHtml = `<div class="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg shadow-sm"><i class="fas fa-check-circle mr-2"></i> ${profileSuccessMsg}</div>`;
-                setTimeout(() => { profileSuccessMsg = ''; renderContent(); }, 4000);
+                const lecturers = users.filter(u => u.role === 'dosen');
+                lecturerSelection = `
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-gray-500 mb-1">DOSEN PENGAMPU</label>
+                        <select id="modal-c-lecturer" class="w-full p-2.5 border rounded-lg bg-white text-sm outline-none focus:ring-1 focus:ring-green-500">
+                            ${lecturers.map(l => `<option value="${l.id}" ${course.lecturerId === l.id ? 'selected' : ''}>${l.name}</option>`).join('')}
+                        </select>
+                    </div>`;
+            } else {
+                lecturerSelection = `<input type="hidden" id="modal-c-lecturer" value="${course.lecturerId}">`;
             }
 
-            const isAdmin = currentUser.role === 'admin';
-            const isMhs = currentUser.role === 'mahasiswa';
-            const isDosen = currentUser.role === 'dosen';
-            const readOnly = isMhs || isDosen; 
-            
-            const idLabel = isMhs ? 'NIM' : 'NIP';
-            const depLabel = isMhs ? 'Program Studi' : 'Departemen/Jabatan';
-            const depValue = isMhs ? (currentUser.major || '') : (currentUser.department || '');
-
-            const historyTitle = isDosen ? "Aktivitas Login" : "Riwayat Aktivitas Akun";
-
-            let formFieldsHtml = '';
-
-            // --- Formulir Khusus Admin ---
-            if (isAdmin) {
-                formFieldsHtml = `
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div><label class="block text-sm font-medium mb-1">Username</label><input type="text" value="${currentUser.username}" class="w-full p-2 border bg-gray-50 rounded text-gray-500" disabled></div>
-                        <div><label class="block text-sm font-medium mb-1">Nama Lengkap</label><input type="text" id="p-name" value="${currentUser.name}" class="w-full p-2 border rounded focus:ring-1 focus:ring-green-500" required></div>
-                        <div class="md:col-span-2 pt-2 border-t mt-2">
-                            <label class="block text-sm font-medium mb-1"><i class="fas fa-lock mr-1 text-gray-500"></i> Ubah Password (Opsional)</label>
-                            <input type="password" id="p-pass" placeholder="Biarkan kosong jika tidak ingin mengubah password" class="w-full p-2 border rounded focus:ring-1 focus:ring-green-500">
-                        </div>
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100 fade-in">
+                    <div class="flex justify-between items-center border-b pb-3 mb-4">
+                        <h3 class="font-bold text-lg text-gray-800">${isNew ? 'Tambah Kelas Baru' : 'Ubah Detail Kelas'}</h3>
+                        <button onclick="closeCourseCrudModal()" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times"></i></button>
                     </div>
-                `;
-            } 
-            // --- Formulir Khusus Dosen & Mahasiswa ---
-            else {
-                formFieldsHtml = `
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div><label class="block text-sm font-medium mb-1">Nama Lengkap</label><input type="text" id="p-name" value="${currentUser.name}" class="w-full p-2 border rounded bg-gray-50 text-gray-500" disabled></div>
-                        <div><label class="block text-sm font-medium mb-1">Username</label><input type="text" value="${currentUser.username}" class="w-full p-2 border bg-gray-50 rounded text-gray-500" disabled></div>
-                        <div><label class="block text-sm font-medium mb-1">${idLabel}</label><input type="text" id="p-nip" value="${currentUser.nip || ''}" class="w-full p-2 border rounded bg-gray-50 text-gray-500" disabled></div>
-                        <div><label class="block text-sm font-medium mb-1">${depLabel}</label><input type="text" id="p-dep" value="${depValue}" class="w-full p-2 border rounded bg-gray-50 text-gray-500" disabled></div>
-                        
+                    <form onsubmit="saveCourseCrud(event, '${mode}')" class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium mb-1">Email</label>
-                            <input type="email" id="p-email" value="${currentUser.email || ''}" class="w-full p-2 border rounded focus:ring-1 focus:ring-green-500" ${isMhs ? 'pattern=".*@mhs\\.sriwigama\\.ac\\.id$" title="Harus berdomain @mhs.sriwigama.ac.id"' : 'pattern=".*@sriwigama\\.ac\\.id$" title="Harus berdomain @sriwigama.ac.id"'} required>
-                            <p class="text-xs text-gray-500 mt-1">Gunakan email berdomain ${isMhs ? '@mhs.sriwigama.ac.id' : '@sriwigama.ac.id'}</p>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">NAMA MATA KULIAH</label>
+                            <input type="text" id="modal-c-title" value="${course.title}" placeholder="Contoh: Dasar-dasar Agronomi Rawa" required class="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-1 focus:ring-green-500">
                         </div>
-                        <div><label class="block text-sm font-medium mb-1">Nomor Handphone</label><input type="text" id="p-phone" value="${currentUser.phone || ''}" class="w-full p-2 border rounded focus:ring-1 focus:ring-green-500"></div>
-                        
-                        <div class="md:col-span-2 pt-2 border-t mt-2">
-                            <label class="block text-sm font-medium mb-1"><i class="fas fa-lock mr-1 text-gray-500"></i> Ubah Password (Opsional)</label>
-                            <input type="password" id="p-pass" placeholder="Biarkan kosong jika tidak ingin mengubah password" class="w-full p-2 border rounded focus:ring-1 focus:ring-green-500">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">PROGRAM STUDI / JURUSAN</label>
+                            <select id="modal-c-dept" class="w-full p-2.5 border rounded-lg bg-white text-sm outline-none focus:ring-1 focus:ring-green-500">
+                                <option value="Agribisnis" ${course.department === 'Agribisnis' ? 'selected' : ''}>Agribisnis</option>
+                                <option value="Agroteknologi" ${course.department === 'Agroteknologi' ? 'selected' : ''}>Agroteknologi</option>
+                            </select>
                         </div>
+                        ${lecturerSelection}
+                        <div class="flex justify-end gap-2 border-t pt-4 mt-6">
+                            <button type="button" onclick="closeCourseCrudModal()" class="px-4 py-2 border rounded-lg text-sm font-semibold hover:bg-gray-50 transition">Batal</button>
+                            <button type="submit" class="px-5 py-2 bg-green-700 hover:bg-green-800 text-white rounded-lg text-sm font-bold shadow transition">Simpan Kelas</button>
+                        </div>
+                    </form>
+                </div>`;
+            modal.classList.remove('hidden');
+        }
 
-                        <!-- Catatan Peringatan -->
-                        <div class="col-span-1 md:col-span-2 mt-2 text-yellow-800 bg-yellow-50 p-4 rounded-lg text-sm flex items-start border border-yellow-300 shadow-sm">
-                            <i class="fas fa-exclamation-triangle mt-0.5 mr-3 text-yellow-600 text-lg"></i> 
-                            <span><strong>Catatan Penting:</strong> Untuk melakukan perubahan data pada Nama Lengkap, ${idLabel}, Username, dan ${depLabel} hanya bisa dilakukan dengan pengisian formulir fisik yang diajukan melalui Admin secara langsung.</span>
-                        </div>
-                    </div>
-                `;
+        window.closeCourseCrudModal = function() {
+            document.getElementById('modal-course-crud').classList.add('hidden');
+        }
+
+        window.saveCourseCrud = function(e, mode) {
+            e.preventDefault();
+            const title = document.getElementById('modal-c-title').value;
+            const dept = document.getElementById('modal-c-dept').value;
+            const lecturerId = document.getElementById('modal-c-lecturer').value;
+
+            if (mode === 'NEW') {
+                const newCourse = {
+                    id: 'c' + Date.now(),
+                    title: title,
+                    lecturerId: lecturerId,
+                    department: dept,
+                    enrolled: [],
+                    modules: [],
+                    quizzes: [],
+                    quizScores: {}
+                };
+                courses.push(newCourse);
+                addLog(`Membuat kelas baru: ${title}`, currentUser);
+                showNotification('Kelas baru berhasil diterbitkan!', 'success');
+            } else {
+                const course = courses.find(c => c.id === mode);
+                if (course) {
+                    course.title = title;
+                    course.department = dept;
+                    course.lecturerId = lecturerId;
+                    addLog(`Mengubah detail kelas: ${title}`, currentUser);
+                    showNotification('Pembaruan data kelas berhasil disimpan!', 'success');
+                }
             }
-
-            return `
-                <div class="max-w-4xl mx-auto">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">Pengaturan Akun & Profil</h2>
-                    ${msgHtml}
-                    
-                    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
-                        <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-user-edit mr-2 text-green-600"></i> Informasi Data Diri</h3>
-                        <form id="profile-form" class="space-y-5">
-                            ${formFieldsHtml}
-                            <div class="pt-4 flex flex-wrap gap-3">
-                                <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 shadow-sm"><i class="fas fa-save mr-2"></i> Simpan Perubahan</button>
-                                <button type="button" onclick="changeTab('dashboard')" class="border border-gray-300 bg-white px-6 py-2 rounded-md hover:bg-gray-50"><i class="fas fa-times mr-2"></i> Batal</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- Riwayat Akses -->
-                    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
-                        <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center"><i class="fas fa-history mr-2 text-blue-600"></i> ${historyTitle}</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="bg-blue-50 border border-blue-100 p-4 rounded-lg">
-                                <p class="text-xs text-blue-500 font-semibold mb-1 uppercase">First Access to Site</p>
-                                <p class="font-medium text-gray-800 text-sm">${currentUser.firstAccess}</p>
-                            </div>
-                            <div class="bg-green-50 border border-green-100 p-4 rounded-lg">
-                                <p class="text-xs text-green-500 font-semibold mb-1 uppercase">Last Access to Site</p>
-                                <p class="font-medium text-gray-800 text-sm">${currentUser.lastAccess}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            closeCourseCrudModal();
+            render();
         }
 
         // ==============================================================================
-        // 8. MENU KELOLA PENGGUNA (ADMIN ONLY) & EKSPOR EXCEL
+        // 9. MANAJEMEN PENGGUNA (ADMIN ONLY)
         // ==============================================================================
-        function getManageUsersHTML() {
+        function renderManageUsers(container) {
             let filteredUsers = users.filter(u => manageUserFilter === 'all' || u.role === manageUserFilter);
 
             let html = `
-                <div class="bg-white rounded-lg shadow-sm border p-4 md:p-6 w-full overflow-hidden">
+                <div class="bg-white rounded-2xl shadow-sm border p-4 md:p-6 w-full overflow-hidden fade-in">
                     <div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4 border-b pb-4">
-                        <h2 class="text-xl md:text-2xl font-bold text-gray-800 flex items-center"><i class="fas fa-users-cog text-purple-600 mr-2"></i> Manajemen Pengguna</h2>
+                        <h2 class="text-xl md:text-2xl font-bold text-gray-800 flex items-center"><i class="fas fa-users-cog text-green-700 mr-2"></i> Kelola Pengguna</h2>
                         <div class="flex flex-wrap gap-2">
-                            <!-- Import/Export Data -->
-                            <label class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm shadow-sm flex items-center cursor-pointer">
-                                <i class="fas fa-file-import mr-2"></i> Import Data
-                                <input type="file" class="hidden" accept=".xlsx, .xls, .csv" onchange="simulateExcelImport(this)">
+                            <label class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-sm flex items-center cursor-pointer transition">
+                                <i class="fas fa-file-import mr-2"></i> Import Data (Excel)
+                                <input type="file" class="hidden" accept=".xlsx, .xls, .csv" onchange="handleExcelImport(this)">
                             </label>
-                            <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm shadow-sm flex items-center"><i class="fas fa-file-excel mr-2"></i> Export Excel</button>
-                            <button onclick="adminEditingUser='NEW'; renderContent();" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm shadow-sm flex items-center"><i class="fas fa-user-plus mr-2"></i> Tambah Baru</button>
+                            
+                            <button onclick="exportUsersToExcel()" class="bg-[#0e5c32] hover:bg-green-800 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-sm flex items-center transition">
+                                <i class="fas fa-file-excel mr-2"></i> Export Data (Excel)
+                            </button>
+
+                            <button onclick="adminEditingUser='NEW'; render();" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-sm flex items-center transition">
+                                <i class="fas fa-user-plus mr-2"></i> Tambah Baru
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Panel Hapus Massal -->
-                    <div class="bg-red-50 border border-red-200 p-4 rounded-lg mb-6 shadow-sm">
-                        <h3 class="text-sm font-bold text-red-700 mb-2"><i class="fas fa-exclamation-triangle mr-1"></i> Hapus Massal Pengguna</h3>
-                        <div class="flex flex-wrap gap-2 items-center">
-                            <select id="md-role" class="border p-2 rounded text-sm focus:ring-1 focus:ring-red-500 bg-white">
-                                <option value="">-- Pilih Role --</option>
+                    <div class="bg-red-50 border border-red-100 p-5 rounded-2xl mb-6">
+                        <h3 class="text-sm font-bold text-red-700 mb-3 flex items-center gap-1.5"><i class="fas fa-exclamation-triangle"></i> Menu Penghapusan Massal Pengguna</h3>
+                        <div class="flex flex-wrap gap-3 items-center">
+                            <select id="md-role-select" class="border p-2.5 rounded-lg text-sm bg-white focus:ring-1 focus:ring-red-500 outline-none">
+                                <option value="">-- Pilih Peran / Role --</option>
                                 <option value="mahasiswa">Mahasiswa</option>
                                 <option value="dosen">Dosen</option>
                             </select>
-                            <input type="text" id="md-major" placeholder="Jurusan (Opsional)" class="border p-2 rounded text-sm focus:ring-1 focus:ring-red-500">
-                            <input type="number" id="md-semester" placeholder="Smt (Opsional)" class="border p-2 rounded text-sm w-32 focus:ring-1 focus:ring-red-500">
-                            <button onclick="executeMassDelete()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm shadow-sm transition"><i class="fas fa-trash mr-1"></i> Hapus Data Sesuai Kriteria</button>
+                            <input type="text" id="md-major-input" placeholder="Jurusan / Program Studi" class="border p-2.5 rounded-lg text-sm bg-white focus:ring-1 focus:ring-red-500 outline-none">
+                            <input type="number" id="md-semester-input" placeholder="Semester" class="border p-2.5 rounded-lg text-sm bg-white w-28 focus:ring-1 focus:ring-red-500 outline-none">
+                            
+                            <button onclick="executeAdminMassDelete()" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition">
+                                <i class="fas fa-trash-alt mr-1.5"></i> Hapus Massal
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Filter & Tabel -->
-                    <div class="mb-4 flex items-center gap-2">
-                        <span class="text-sm font-medium text-gray-600">Filter Data: </span>
-                        <select onchange="manageUserFilter=this.value; renderContent();" class="border p-2 rounded text-sm bg-white shadow-sm">
+                    <div class="mb-5 flex items-center gap-3">
+                        <span class="text-sm font-bold text-gray-500">Saring Berdasarkan Peran:</span>
+                        <select onchange="manageUserFilter=this.value; render();" class="border p-2.5 rounded-xl text-sm bg-white shadow-sm focus:ring-1 focus:ring-green-500 outline-none">
                             <option value="all" ${manageUserFilter==='all'?'selected':''}>Semua Role</option>
                             <option value="admin" ${manageUserFilter==='admin'?'selected':''}>Admin</option>
                             <option value="dosen" ${manageUserFilter==='dosen'?'selected':''}>Dosen</option>
                             <option value="mahasiswa" ${manageUserFilter==='mahasiswa'?'selected':''}>Mahasiswa</option>
                         </select>
-                    </div>
-            `;
+                    </div>`;
 
-            // Tampilan Form Edit/Tambah Pengguna
             if (adminEditingUser) {
                 const isNew = adminEditingUser === 'NEW';
                 const u = isNew ? { role: 'mahasiswa', name: '', username: '' } : users.find(x => x.id === adminEditingUser);
@@ -489,142 +821,1040 @@
                 html += `
                     <div class="bg-gray-50 p-4 md:p-6 rounded-lg border mb-6 shadow-sm border-l-4 border-purple-500">
                         <h3 class="text-lg font-bold mb-4">${isNew ? 'Tambah Pengguna Baru' : 'Edit Data: ' + u.name}</h3>
-                        <form id="admin-user-form" class="space-y-4">
+                        <form id="admin-user-form" onsubmit="handleAdminSaveUser(event, '${isNew}')" class="space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div><label class="text-sm font-medium">Peran</label>
-                                    <select id="au-role" class="w-full p-2 border rounded bg-white focus:ring-1 focus:ring-purple-500" onchange="updateAdminFormFields(this.value)">
+                                    <select id="au-role" class="w-full p-2.5 border rounded-lg bg-white outline-none focus:ring-1 focus:ring-green-500 animate" onchange="updateAdminFormFields(this.value)">
                                         <option value="mahasiswa" ${u.role==='mahasiswa'?'selected':''}>Mahasiswa</option>
                                         <option value="dosen" ${u.role==='dosen'?'selected':''}>Dosen</option>
                                         <option value="admin" ${u.role==='admin'?'selected':''}>Administrator</option>
                                     </select>
                                 </div>
-                                <div><label class="text-sm font-medium">Nama Lengkap</label><input type="text" id="au-name" value="${u.name}" class="w-full p-2 border rounded" required></div>
+                                <div><label class="text-sm font-medium">Nama Lengkap</label><input type="text" id="au-name" value="${u.name}" required class="w-full p-2.5 border rounded-lg outline-none"></div>
+                                <div><label class="text-sm font-medium">ID Pengguna (NIP/NIM)</label><input type="text" id="au-id" value="${u.id}" ${!isNew ? 'disabled bg-gray-100 cursor-not-allowed text-gray-400' : ''} required class="w-full p-2.5 border rounded-lg outline-none"></div>
+                                <div><label class="text-sm font-medium">Username Login</label><input type="text" id="au-user" value="${u.username}" ${!isNew ? 'disabled bg-gray-100 cursor-not-allowed text-gray-400' : ''} required class="w-full p-2.5 border rounded-lg outline-none"></div>
                                 ${isNew ? `
-                                    <div><label class="text-sm font-medium">Username login</label><input type="text" id="au-user" class="w-full p-2 border rounded" required></div>
-                                    <div><label class="text-sm font-medium">Password sementara</label><input type="text" id="au-pass" value="password123" class="w-full p-2 border rounded bg-gray-100" readonly></div>
-                                ` : ''}
+                                <div><label class="text-sm font-medium">Kata Sandi Awal</label><input type="text" id="au-pass" value="password123" class="w-full p-2.5 border rounded-lg bg-gray-100 outline-none" readonly></div>` : ''}
                             </div>
-                            <div id="dynamic-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t mt-4"></div>
+                            <div id="dynamic-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t"></div>
                             <div class="flex gap-2 pt-4">
-                                <button type="submit" class="bg-purple-600 text-white px-5 py-2 rounded shadow-sm hover:bg-purple-700"><i class="fas fa-save mr-1"></i> Simpan</button>
-                                <button type="button" onclick="adminEditingUser=null; renderContent();" class="border px-5 py-2 rounded hover:bg-gray-50 bg-white">Batal</button>
+                                <button type="submit" class="bg-green-600 text-white font-bold px-6 py-2.5 rounded-lg shadow-sm hover:bg-green-700 transition">Simpan Pengguna</button>
+                                <button type="button" onclick="adminEditingUser=null; render();" class="border font-semibold px-6 py-2.5 rounded-lg bg-white hover:bg-gray-50 transition">Batal</button>
                             </div>
                         </form>
-                    </div>
-                `;
-                setTimeout(() => updateAdminFormFields(u.role, u), 0);
+                    </div>`;
+                setTimeout(() => updateAdminFormFields(u.role, u), 50);
             } 
-            // Tampilan Form Reset Password
             else if (adminResettingUser) {
                 const u = users.find(x => x.id === adminResettingUser);
                 html += `
-                    <div class="bg-orange-50 p-4 md:p-6 rounded-lg border mb-6 shadow-sm border-l-4 border-orange-500">
-                        <h3 class="text-lg font-bold mb-4 text-orange-800"><i class="fas fa-key mr-2"></i> Reset Password: ${u.name}</h3>
-                        <form id="admin-reset-form" class="space-y-4">
-                            <div>
-                                <label class="text-sm font-medium block mb-1 text-gray-700">Password Baru</label>
-                                <input type="text" id="ar-pass" value="password123" class="w-full md:w-1/2 p-2 border rounded focus:ring-1 focus:ring-orange-500 bg-white" required>
+                    <div class="bg-orange-50 p-6 rounded-2xl border mb-6 shadow-sm border-l-4 border-orange-500">
+                        <h3 class="text-lg font-bold mb-4 text-orange-800"><i class="fas fa-key mr-2"></i> Reset Sandi: ${u.name}</h3>
+                        <form id="admin-reset-form" onsubmit="handleAdminResetSubmit(event)" class="space-y-4">
+                            <div><label class="text-xs font-bold text-gray-700 block mb-1">Kata Sandi Baru</label><input type="text" id="ar-pass" value="password123" required class="w-full md:w-1/2 p-2.5 border rounded-lg outline-none"></div>
+                            <div class="bg-white p-4 border border-orange-200 rounded-xl">
+                                <label class="text-xs font-bold text-gray-800 block mb-2"><i class="fas fa-file-upload mr-1 text-orange-600"></i> Unggah Formulir Fisik Bukti Permintaan (Wajib)</label>
+                                <input type="file" id="ar-file" accept="image/*,.pdf" class="w-full text-xs text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700" required>
+                                <p class="text-[10px] text-gray-400 mt-1">Bukti fisik ini akan terekam secara permanen di basis data demi kelengkapan log keamanan sistem.</p>
                             </div>
-                            <div class="bg-white p-4 border border-orange-200 rounded-lg">
-                                <label class="text-sm font-medium block mb-2 text-gray-800"><i class="fas fa-file-upload mr-1 text-orange-600"></i> Upload Bukti Permintaan (Wajib)</label>
-                                <input type="file" id="ar-file" accept="image/*,.pdf" class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700" required>
-                            </div>
-                            <div class="flex gap-2 pt-4">
-                                <button type="submit" class="bg-orange-600 text-white px-5 py-2 rounded shadow-sm hover:bg-orange-700">Proses Reset</button>
-                                <button type="button" onclick="adminResettingUser=null; renderContent();" class="border px-5 py-2 rounded bg-white">Batal</button>
+                            <div class="flex gap-2 pt-2">
+                                <button type="submit" class="bg-orange-600 text-white font-bold px-6 py-2.5 rounded-lg shadow-sm hover:bg-orange-700 transition">Konfirmasi & Reset</button>
+                                <button type="button" onclick="adminResettingUser=null; render();" class="border font-semibold px-6 py-2.5 rounded-lg bg-white hover:bg-gray-50 transition">Batal</button>
                             </div>
                         </form>
-                    </div>
-                `;
-            } 
-            // Tampilan Tabel
+                    </div>`;
+            }
             else {
                 html += `
-                    <div class="overflow-x-auto rounded border no-scrollbar">
+                    <div class="overflow-x-auto rounded-xl border no-scrollbar">
                         <table class="min-w-full text-left border-collapse bg-white whitespace-nowrap">
                             <thead>
                                 <tr class="bg-gray-100 border-b">
-                                    <th class="p-3 text-sm font-semibold">Nama</th><th class="p-3 text-sm font-semibold">ID/Username</th><th class="p-3 text-sm font-semibold">Peran</th><th class="p-3 text-sm font-semibold">Info</th><th class="p-3 text-sm font-semibold text-center">Aksi</th>
+                                    <th class="p-3 text-sm font-semibold">ID Pengguna (NIP/NIM)</th>
+                                    <th class="p-3 text-sm font-semibold">Nama Pengguna</th>
+                                    <th class="p-3 text-sm font-semibold">Peran/Role Pengguna</th>
+                                    <th class="p-3 text-sm font-semibold">Info</th>
+                                    <th class="p-3 text-sm font-semibold text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${filteredUsers.map(u => {
-                                    let proofBtn = u.resetFormUrl ? `<button onclick="window.open('${u.resetFormUrl}', '_blank')" class="text-orange-600 bg-orange-50 hover:bg-orange-100 p-2 rounded mx-1 text-xs" title="Bukti Reset"><i class="fas fa-file-contract mr-1"></i></button>` : '';
+                                    let proofBtn = u.resetFormUrl ? `<button onclick="window.open('${u.resetFormUrl}', '_blank')" class="text-orange-600 bg-orange-50 hover:bg-orange-100 p-2 rounded mx-1 text-xs" title="Bukti Reset"><i class="fas fa-file-contract mr-1"></i> Bukti</button>` : '';
                                     return `
                                     <tr class="border-b hover:bg-gray-50 transition-colors">
-                                        <td class="p-3 text-sm font-medium">${u.name}</td>
-                                        <td class="p-3 text-sm text-gray-500">ID: ${u.id}<br><span class="text-xs">@${u.username}</span></td>
-                                        <td class="p-3 text-sm"><span class="px-2 py-1 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-red-100 text-red-700' : u.role === 'dosen' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">${u.role.toUpperCase()}</span></td>
-                                        <td class="p-3 text-sm text-gray-600">${u.role === 'mahasiswa' ? `Smt: ${u.semester||'-'} | ${u.major||'-'}` : u.role === 'dosen' ? u.department||'-' : '-'}</td>
-                                        <td class="p-3 text-sm text-center">
-                                            <button onclick="adminEditingUser='${u.id}'; renderContent();" class="text-indigo-600 bg-indigo-50 p-2 rounded mx-1" title="Edit"><i class="fas fa-edit"></i></button>
-                                            <button onclick="adminResettingUser='${u.id}'; renderContent();" class="text-orange-600 bg-orange-50 p-2 rounded mx-1" title="Reset Password" ${u.id === currentUser.id ? 'disabled opacity-50' : ''}><i class="fas fa-key"></i></button>
-                                            <button onclick="deleteUser('${u.id}')" class="text-red-600 bg-red-50 p-2 rounded mx-1" title="Hapus" ${u.id === currentUser.id ? 'disabled opacity-50' : ''}><i class="fas fa-trash"></i></button>
+                                        <td class="p-3 text-sm font-semibold text-gray-700">${u.id}</td>
+                                        <td class="p-3 text-sm font-medium">
+                                            <div class="leading-tight">
+                                                <p class="text-gray-800">${u.name}</p>
+                                                <p class="text-xs text-gray-400 font-normal">@${u.username}</p>
+                                            </div>
+                                        </td>
+                                        <td class="p-3 text-sm"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${u.role === 'admin' ? 'bg-red-100 text-red-700' : (u.role === 'dosen' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700')}">${u.role.toUpperCase()}</span></td>
+                                        <td class="p-3 text-sm text-gray-600">${u.role === 'mahasiswa' ? `Smt: ${u.semester || '-'} &bull; ${u.major || '-'}` : (u.role === 'dosen' ? u.department || '-' : '-')}</td>
+                                        <td class="p-3 text-sm text-center font-bold">
+                                            <button onclick="adminEditingUser='${u.id}'; render();" class="text-indigo-600 bg-indigo-50 p-2 rounded-lg mx-1 hover:bg-indigo-100 transition" title="Edit Data Pengguna"><i class="fas fa-edit"></i></button>
+                                            <button onclick="adminResettingUser='${u.id}'; render();" class="text-orange-600 bg-orange-50 p-2 rounded-lg mx-1 hover:bg-orange-100 transition" title="Reset Password"><i class="fas fa-key"></i></button>
+                                            <button onclick="handleAdminDeleteUser('${u.id}')" class="text-red-600 bg-red-50 p-2 rounded-lg mx-1 hover:bg-red-100 transition" title="Hapus Pengguna" ${u.id === currentUser.id ? 'disabled opacity-50 cursor-not-allowed' : ''}><i class="fas fa-trash"></i></button>
                                             ${proofBtn}
                                         </td>
-                                    </tr>
-                                    `
+                                    </tr>`;
                                 }).join('')}
-                                ${filteredUsers.length === 0 ? '<tr><td colspan="5" class="p-4 text-center text-gray-500">Tidak ada data ditemukan.</td></tr>' : ''}
+                                ${filteredUsers.length === 0 ? '<tr><td colspan="5" class="p-4 text-center text-gray-500">Data tidak ditemukan.</td></tr>' : ''}
                             </tbody>
                         </table>
-                    </div>
-                `;
+                    </div>`;
             }
+            
             html += '</div>';
-            return html;
+            container.innerHTML = html;
         }
 
-        // --- Fitur Hapus Massal ---
-        window.executeMassDelete = function() {
-            const role = document.getElementById('md-role').value;
-            const major = document.getElementById('md-major').value.trim();
-            const semester = document.getElementById('md-semester').value.trim();
+        window.updateAdminFormFields = function(role, userObj = {}) {
+            const container = document.getElementById('dynamic-fields');
+            if(!container) return;
+            const u = userObj.id ? userObj : (adminEditingUser !== 'NEW' ? users.find(x => x.id === adminEditingUser) : {});
             
-            if(!role && !major && !semester) {
-                return alert('Pilih setidaknya satu kriteria untuk menghapus massal!');
+            if(role === 'mahasiswa') {
+                container.innerHTML = `
+                    <div><label class="text-xs font-bold text-gray-500">Program Studi / Jurusan</label><input type="text" id="au-dep" value="${u.major||''}" required class="w-full p-2.5 border rounded-lg outline-none focus:ring-1 focus:ring-green-500"></div>
+                    <div><label class="text-xs font-bold text-gray-500">Semester Aktif</label><input type="number" id="au-sem" value="${u.semester||''}" required class="w-full p-2.5 border rounded-lg outline-none focus:ring-1 focus:ring-green-500"></div>`;
+            } else if (role === 'dosen') {
+                container.innerHTML = `
+                    <div><label class="text-xs font-bold text-gray-500">Departemen / Jabatan</label><input type="text" id="au-dep" value="${u.department||''}" required class="w-full p-2.5 border rounded-lg outline-none focus:ring-1 focus:ring-green-500"></div>`;
+            } else {
+                container.innerHTML = '';
             }
-            
-            if(confirm('Anda yakin ingin menghapus pengguna berdasarkan kriteria ini? Tindakan ini tidak dapat dibatalkan.')) {
-                const initialCount = users.length;
+        }
+
+        window.handleAdminSaveUser = function(e, isNewStr) {
+            e.preventDefault();
+            const isNew = isNewStr === 'true';
+            const role = document.getElementById('au-role').value;
+            const name = document.getElementById('au-name').value;
+            const idVal = document.getElementById('au-id').value.trim();
+            const usernameVal = document.getElementById('au-user').value.trim();
+
+            if (isNew) {
+                if(users.some(x => x.id === idVal)) {
+                    showNotification('ID Pengguna (NIP/NIM) sudah digunakan!', 'error');
+                    return;
+                }
+                if(users.some(x => x.username === usernameVal)) {
+                    showNotification('Username sudah digunakan!', 'error');
+                    return;
+                }
+            }
+
+            let targetUser;
+            if (isNew) {
+                targetUser = { id: idVal, username: usernameVal, password: 'password123', role: role, name: name, firstAccess: getFormattedTime(), lastAccess: '-' };
+                users.push(targetUser);
+            } else {
+                targetUser = users.find(u => u.id === adminEditingUser);
+                targetUser.name = name;
+                targetUser.role = role;
+            }
+
+            if(role === 'mahasiswa') {
+                targetUser.major = document.getElementById('au-dep').value;
+                targetUser.semester = parseInt(document.getElementById('au-sem').value);
+                delete targetUser.department;
+            } else if (role === 'dosen') {
+                targetUser.department = document.getElementById('au-dep').value;
+                delete targetUser.major;
+                delete targetUser.semester;
+            }
+
+            adminEditingUser = null;
+            showNotification(isNew ? 'Pengguna baru berhasil ditambahkan!' : 'Data pengguna berhasil diperbarui!', 'success');
+            render();
+        }
+
+        window.handleAdminDeleteUser = function(idVal) {
+            if(idVal === currentUser.id) return;
+            showConfirmModal('Apakah Anda yakin ingin menghapus pengguna ini secara permanen dari sistem E-LMS?', () => {
+                users = users.filter(u => u.id !== idVal);
+                showNotification('Pengguna berhasil dihapus.', 'success');
+                render();
+            });
+        }
+
+        window.handleAdminResetSubmit = function(e) {
+            e.preventDefault();
+            const newPass = document.getElementById('ar-pass').value;
+            const fileInput = document.getElementById('ar-file');
+
+            if(fileInput.files.length === 0) {
+                showNotification('Formulir bukti fisik pengajuan wajib diunggah!', 'error');
+                return;
+            }
+
+            const targetUser = users.find(u => u.id === adminResettingUser);
+            if(targetUser) {
+                targetUser.password = newPass;
+                targetUser.resetFormUrl = URL.createObjectURL(fileInput.files[0]);
+                targetUser.resetFormName = fileInput.files[0].name;
+                addLog(`Reset sandi akun: ${targetUser.name}`, currentUser);
+                showNotification('Sandi berhasil direset dan bukti tersimpan!', 'success');
+            }
+
+            adminResettingUser = null;
+            render();
+        }
+
+        window.executeAdminMassDelete = function() {
+            const role = document.getElementById('md-role-select').value;
+            const major = document.getElementById('md-major-input').value.trim();
+            const semester = document.getElementById('md-semester-input').value.trim();
+
+            if(!role && !major && !semester) {
+                showNotification('Pilih kriteria untuk melakukan penghapusan massal!', 'error');
+                return;
+            }
+
+            let msg = 'Apakah Anda yakin ingin menghapus secara massal pengguna yang cocok dengan kriteria berikut?<br>';
+            if(role) msg += `&bull; Peran: <strong>${role}</strong><br>`;
+            if(major) msg += `&bull; Jurusan/Program Studi: <strong>${major}</strong><br>`;
+            if(semester) msg += `&bull; Semester: <strong>${semester}</strong>`;
+
+            showConfirmModal(msg, () => {
+                const initLen = users.length;
                 users = users.filter(u => {
-                    if (u.id === currentUser.id) return true; // Proteksi diri sendiri
-                    
+                    if (u.id === currentUser.id) return true;
+
                     let match = true;
                     if (role && u.role !== role) match = false;
                     if (major && u.major !== major && u.department !== major) match = false;
                     if (semester && String(u.semester) !== semester) match = false;
-                    
-                    return !match; // Jika cocok dengan kriteria hapus, kembalikan false agar terhapus
+
+                    return !match;
                 });
-                const deletedCount = initialCount - users.length;
-                alert(`${deletedCount} pengguna berhasil dihapus dari sistem.`);
-                renderContent();
+
+                const deletedCount = initLen - users.length;
+                showNotification(`Berhasil menghapus ${deletedCount} pengguna secara massal!`, 'success');
+                render();
+            });
+        }
+
+        window.exportUsersToExcel = function() {
+            if (typeof XLSX !== 'undefined') {
+                const data = users.map(u => ({
+                    'ID Pengguna / NIP / NIM': u.id,
+                    'Username': u.username,
+                    'Peran / Role': u.role.toUpperCase(),
+                    'Nama Lengkap': u.name,
+                    'Email Akademik': u.email || '-',
+                    'Nomor Telepon': u.phone || '-',
+                    'Semester': u.semester || '-',
+                    'Jurusan / Program Studi': u.major || u.department || '-'
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Pengguna E-LMS");
+                XLSX.writeFile(wb, "Data_Pengguna_STIPER.xlsx");
+                showNotification('Data pengguna berhasil diekspor ke Excel!', 'success');
+            } else {
+                showNotification('Library ekspor gagal dimuat!', 'error');
+            }
+        }
+
+        window.handleExcelImport = function(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                input.value = '';
+                showNotification(`Mengimpor "${file.name}"...`, 'success');
+                setTimeout(() => {
+                    users.push(
+                        { id: '2021004', username: 'mhs4', password: 'password', role: 'mahasiswa', name: 'Rian Hidayat', major: 'Agroteknologi', semester: 3, email: 'rian@mhs.sriwigama.ac.id', firstAccess: getFormattedTime(), lastAccess: '-' },
+                        { id: '198203032009012002', username: 'dosen3', password: 'password', role: 'dosen', name: 'Suhartono, M.P.', department: 'Agroteknologi', email: 'suhartono@sriwigama.ac.id', firstAccess: getFormattedTime(), lastAccess: '-' }
+                    );
+                    showNotification('Import massal selesai! 2 pengguna baru berhasil ditambahkan.', 'success');
+                    render();
+                }, 1000);
             }
         }
 
         // ==============================================================================
-        // 9. LOG PENGGUNA (ADMIN ONLY)
+        // 10. DETAIL KELAS - MODUL MATERI, KUIS & PESERTA KELAS
+        // ==============================================================================
+        function renderCourseDetail(container) {
+            if (activeQuizEditId) {
+                renderQuizEditor(container);
+                return;
+            }
+            if (activeQuizTakeId) {
+                renderQuizTaker(container);
+                return;
+            }
+
+            const isDosen = currentUser.role === 'dosen' && currentUser.id === selectedCourse.lecturerId;
+            const isAdmin = currentUser.role === 'admin';
+            const canManage = isDosen || isAdmin;
+
+            let addModBtn = canManage ? `
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="addModule()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm shadow-sm transition flex items-center gap-1 font-semibold">
+                        <i class="fas fa-plus"></i> Tambah Materi
+                    </button>
+                    <label class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm shadow-sm transition cursor-pointer flex items-center gap-1 font-semibold">
+                        <i class="fas fa-cloud-upload-alt"></i> Upload File
+                        <input type="file" id="direct-file-upload" class="hidden" accept=".docx,.doc,.ppt,.pptx,.xls,.xlsx,.pdf,image/*,video/*" onchange="handleDirectFileUpload(this)">
+                    </label>
+                </div>` : '';
+
+            let html = `
+                <button onclick="selectedCourse=null; render();" class="mb-4 text-sm font-bold text-green-600 flex items-center hover:bg-green-50 w-fit p-2 rounded-lg transition"><i class="fas fa-arrow-left mr-2"></i> KEMBALI</button>
+                <div class="bg-white rounded-2xl border p-6 mb-8 shadow-sm">
+                    <span class="bg-emerald-100 text-emerald-800 font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-md">${selectedCourse.department}</span>
+                    <h1 class="text-2xl font-black text-gray-800 uppercase tracking-tight mt-2">${selectedCourse.title}</h1>
+                    <p class="text-gray-500 text-xs mt-1"><i class="far fa-user-circle mr-1"></i> Dosen Pengampu: ${users.find(u => u.id === selectedCourse.lecturerId)?.name || 'Unknown'}</p>
+                </div>
+                
+                <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                    <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-book-open mr-2 text-green-600"></i> Materi Pembelajaran</h3>
+                    ${addModBtn}
+                </div>
+                <div class="space-y-4 mb-8">`;
+            
+            if (uploadProgress) {
+                html += `
+                    <div class="bg-white rounded-lg border shadow-sm p-5 border-l-4 border-blue-500 animate-pulse">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-semibold text-gray-700"><i class="fas fa-spinner fa-spin mr-2"></i> Mengunggah ${uploadProgress.fileName} dari device...</span>
+                            <span class="text-xs font-bold text-blue-600">${uploadProgress.percent}%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                            <div class="bg-blue-600 h-full transition-all duration-150" style="width: ${uploadProgress.percent}%"></div>
+                        </div>
+                    </div>`;
+            }
+
+            if ((!selectedCourse.modules || selectedCourse.modules.length === 0) && !uploadProgress) {
+                html += `<div class="bg-white rounded border p-8 text-center text-gray-500 border-dashed border-2">Belum ada materi pembelajaran yang diterbitkan.</div>`;
+            } else {
+                selectedCourse.modules.forEach(mod => {
+                    html += renderModuleCard(mod, canManage);
+                });
+            }
+            html += `</div>`;
+
+            // Bagian Kuis Evaluasi
+            let addQuizBtn = canManage ? `<button onclick="createNewQuiz()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm shadow-sm transition"><i class="fas fa-plus mr-1"></i> Buat Kuis Baru</button>` : '';
+            html += `<div class="flex flex-wrap justify-between items-center mb-4 gap-2"><h3 class="text-xl font-bold text-gray-800"><i class="fas fa-tasks mr-2 text-purple-600"></i> Evaluasi & Kuis</h3>${addQuizBtn}</div><div class="space-y-4 mb-8">`;
+
+            if (!selectedCourse.quizzes || selectedCourse.quizzes.length === 0) {
+                html += `<div class="bg-white rounded border p-8 text-center text-gray-500 border-dashed border-2">Belum ada kuis/ujian tersedia.</div>`;
+            } else {
+                selectedCourse.quizzes.forEach(quiz => {
+                    let score = (selectedCourse.quizScores && selectedCourse.quizScores[quiz.id] && selectedCourse.quizScores[quiz.id][currentUser.id] !== undefined) 
+                                ? selectedCourse.quizScores[quiz.id][currentUser.id] : null;
+
+                    let qActions = '';
+                    if (canManage) {
+                        qActions = `<button onclick="editQuiz('${quiz.id}')" class="text-blue-600 px-2 text-sm hover:underline"><i class="fas fa-edit"></i> Edit</button>
+                                    <button onclick="deleteQuiz('${quiz.id}')" class="text-red-600 px-2 text-sm hover:underline"><i class="fas fa-trash"></i> Hapus</button>`;
+                    } else if (currentUser.role === 'mahasiswa') {
+                        if (score !== null) {
+                            qActions = `<span class="bg-green-100 text-green-800 px-3 py-1 rounded font-bold text-sm">Nilai: ${score}/100</span>`;
+                        } else {
+                            qActions = `<button onclick="takeQuiz('${quiz.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm shadow-sm transition"><i class="fas fa-pencil-alt mr-1"></i> Kerjakan Kuis</button>`;
+                        }
+                    } else if (isAdmin) {
+                        qActions = `<span class="bg-purple-100 text-purple-800 px-3 py-1 rounded text-xs font-bold">Akses Admin (Lihat)</span>`;
+                    }
+
+                    html += `
+                        <div class="bg-white rounded-lg border shadow-sm p-4 flex justify-between items-center">
+                            <div><h4 class="font-bold text-gray-800">${quiz.title}</h4><p class="text-xs text-gray-500">${quiz.questions.length} Pertanyaan Pilihan Ganda</p></div>
+                            <div class="flex items-center gap-2">${qActions}</div>
+                        </div>`;
+                });
+            }
+            html += `</div>`;
+
+            // BAGIAN BARU: TAMPILKAN PESERTA YANG MENGIKUTI KELAS (Peserta Roster & Kelola Mahasiswa)
+            const enrolledStudents = users.filter(u => selectedCourse.enrolled.includes(u.id));
+            const availableStudents = users.filter(u => u.role === 'mahasiswa' && !selectedCourse.enrolled.includes(u.id));
+
+            let manageParticipantsBtn = canManage ? `
+                <button onclick="triggerAddParticipantDropdown()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1">
+                    <i class="fas fa-user-plus"></i> Tambah Mahasiswa
+                </button>` : '';
+
+            html += `
+                <div class="mt-12 border-t border-gray-200 pt-8">
+                    <div class="flex justify-between items-center mb-4 gap-2">
+                        <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-users mr-2 text-emerald-600"></i> Mahasiswa & Peserta Kelas (${enrolledStudents.length})</h3>
+                        ${manageParticipantsBtn}
+                    </div>
+                    
+                    <!-- Form Tambah Mahasiswa (Hidden secara default) -->
+                    <div id="add-participant-box" class="bg-emerald-50 border border-emerald-100 p-4 rounded-xl mb-4 hidden">
+                        <label class="block text-xs font-bold text-emerald-800 mb-1">PILIH MAHASISWA UNTUK DIDAFTARKAN KE KELAS</label>
+                        <div class="flex flex-wrap gap-2">
+                            <select id="select-new-participant" class="border p-2 rounded-lg text-sm bg-white focus:ring-1 focus:ring-green-500 outline-none flex-grow max-w-sm">
+                                <option value="">-- Pilih Mahasiswa --</option>
+                                ${availableStudents.map(s => `<option value="${s.id}">${s.name} (NIM: ${s.id})</option>`).join('')}
+                            </select>
+                            <button onclick="addParticipantToCourse()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-lg text-sm font-bold transition">Daftarkan</button>
+                            <button onclick="triggerAddParticipantDropdown()" class="px-4 py-2 border rounded-lg bg-white text-sm font-semibold transition text-gray-600">Batal</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
+            
+            if (enrolledStudents.length === 0) {
+                html += `<div class="col-span-full bg-white border border-gray-150 p-6 rounded-xl text-center text-gray-500 italic">Belum ada mahasiswa yang terdaftar di kelas ini.</div>`;
+            } else {
+                enrolledStudents.forEach(student => {
+                    let removeBtn = canManage ? `
+                        <button onclick="removeParticipantFromCourse('${student.id}')" class="text-red-600 hover:text-red-800 p-1.5 rounded-lg bg-red-50 hover:bg-red-100 transition shadow-sm text-xs" title="Keluarkan dari Kelas">
+                            <i class="fas fa-user-minus"></i>
+                        </button>` : '';
+
+                    html += `
+                        <div class="bg-white p-4 rounded-xl border border-gray-150 shadow-sm flex items-center justify-between gap-3">
+                            <div class="flex items-center space-x-3 min-w-0">
+                                <div class="w-10 h-10 bg-emerald-100 text-emerald-800 font-bold rounded-full flex items-center justify-center shrink-0">
+                                    ${student.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                </div>
+                                <div class="min-w-0">
+                                    <h4 class="font-bold text-gray-800 truncate text-sm">${student.name}</h4>
+                                    <p class="text-[10px] text-gray-400 font-semibold uppercase">NIM: ${student.id} &bull; Smt ${student.semester || '3'}</p>
+                                </div>
+                            </div>
+                            ${removeBtn}
+                        </div>`;
+                });
+            }
+
+            html += `
+                    </div>
+                </div>`;
+
+            container.innerHTML = html;
+        }
+
+        // Logika kelola peserta kelas (Dosen & Admin)
+        window.triggerAddParticipantDropdown = function() {
+            const el = document.getElementById('add-participant-box');
+            if (el) el.classList.toggle('hidden');
+        }
+
+        window.addParticipantToCourse = function() {
+            const select = document.getElementById('select-new-participant');
+            const studentId = select.value;
+            if(!studentId) {
+                showNotification('Silakan pilih mahasiswa terlebih dahulu!', 'error');
+                return;
+            }
+
+            if (!selectedCourse.enrolled.includes(studentId)) {
+                selectedCourse.enrolled.push(studentId);
+                const studentName = users.find(u => u.id === studentId)?.name;
+                addLog(`Mendaftarkan mahasiswa ${studentName} ke kelas ${selectedCourse.title}`, currentUser);
+                showNotification(`${studentName} berhasil terdaftar di kelas.`, 'success');
+                render();
+            }
+        }
+
+        window.removeParticipantFromCourse = function(studentId) {
+            const studentName = users.find(u => u.id === studentId)?.name;
+            showConfirmModal(`Keluarkan <strong>${studentName}</strong> dari kepesertaan mata kuliah ini? seluruh rekap nilai kuis mahasiswa ini di kelas akan diarsipkan.`, () => {
+                selectedCourse.enrolled = selectedCourse.enrolled.filter(id => id !== studentId);
+                addLog(`Mengeluarkan mahasiswa ${studentName} dari kelas ${selectedCourse.title}`, currentUser);
+                showNotification('Mahasiswa berhasil dikeluarkan dari kepesertaan kelas.', 'success');
+                render();
+            });
+        }
+
+        // ==============================================================================
+        // 11. MODUL DETAIL CARD - KLIK KARTU LANGSUNG UNTUK PREVIEW (TANPA TOMBOL BUKA)
+        // ==============================================================================
+        function renderModuleCard(mod, canManage) {
+            const isEditing = editingModule === mod.id;
+            
+            return `
+                <div onclick="openDetailedModuleModal('${mod.id}')" class="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden hover:border-emerald-300 transition-all cursor-pointer">
+                    <!-- Header Modul -->
+                    <div class="bg-gray-50 px-5 py-4 border-b flex justify-between items-center" onclick="event.stopPropagation()">
+                        <div class="flex-grow">
+                            ${isEditing ? `<input id="e-title" value="${mod.title}" class="font-bold text-gray-800 p-2 border rounded-lg bg-white w-2/3 outline-none focus:ring-1 focus:ring-green-500 text-sm">` : `<h4 class="font-black text-gray-800 uppercase tracking-tight text-sm flex items-center"><i class="fas fa-folder text-emerald-600 mr-2 text-base"></i> ${mod.title}</h4>`}
+                        </div>
+                        <div class="flex gap-2 shrink-0">
+                            ${canManage ? (isEditing ? `<button onclick="saveMod('${mod.id}')" class="text-green-600 text-xs font-bold hover:bg-green-100 p-2 rounded transition">SIMPAN</button>` : `<button onclick="editingModule='${mod.id}'; render();" class="text-blue-600 text-xs font-bold hover:bg-blue-100 p-2 rounded transition">EDIT</button> <button onclick="deleteMod('${mod.id}')" class="text-red-600 text-xs font-bold hover:bg-red-100 p-2 rounded transition">HAPUS</button>`) : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        ${isEditing ? `<textarea id="e-content" class="w-full h-32 p-3 border rounded-xl outline-none focus:ring-2 focus:ring-green-500 mb-4 text-sm" onclick="event.stopPropagation()">${mod.content}</textarea>` : `<div class="text-sm text-gray-600 leading-relaxed line-clamp-3">${mod.content}</div>`}
+                        
+                        <!-- AREA FILE PROGRESS -->
+                        ${activeModuleUploadId === mod.id ? `
+                            <div class="mt-4 p-5 bg-white border-2 border-green-500 rounded-2xl shadow-lg animate-pulse" onclick="event.stopPropagation()">
+                                <div class="flex justify-between mb-2"><span class="text-xs font-black text-green-700 uppercase">Mengunggah Berkas...</span><span class="text-xs font-black text-green-700">${globalUploadProgress}%</span></div>
+                                <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden border"><div class="bg-green-600 h-full progress-bar-fill" style="width: ${globalUploadProgress}%"></div></div>
+                            </div>` : ''}
+
+                        <!-- Info lampiran mini di pojok kartu -->
+                        ${(!isEditing && mod.fileName) ? `
+                            <div class="mt-4 inline-flex items-center text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-100 font-semibold">
+                                <i class="fas fa-paperclip mr-1.5"></i> ${mod.fileName}
+                            </div>` : ''}
+                    </div>
+                </div>`;
+        }
+
+        // Membuka modal detail modul dengan FITUR PREVIEW LAMPIRAN YANG LEBIH BAGUS & RESILIENT
+        window.openDetailedModuleModal = function(modId) {
+            const mod = selectedCourse.modules.find(m => m.id === modId);
+            if (!mod) return;
+            activeDetailedModule = mod;
+
+            const modal = document.getElementById('modal-module-detail');
+            const isDosen = currentUser.role === 'dosen' && currentUser.id === selectedCourse.lecturerId;
+            const isAdmin = currentUser.role === 'admin';
+            const canManage = isDosen || isAdmin;
+            
+            let fileUI = '';
+            if (mod.fileUrl && mod.fileName) {
+                const ext = mod.fileName.split('.').pop().toLowerCase();
+                let icon = 'fa-file-alt';
+                let color = 'bg-gray-100 text-gray-600 border-gray-200';
+                
+                if (['pdf'].includes(ext)) { icon = 'fa-file-pdf'; color = 'bg-red-50 text-red-600 border-red-100'; }
+                else if (['doc','docx'].includes(ext)) { icon = 'fa-file-word'; color = 'bg-blue-50 text-blue-600 border-blue-100'; }
+                else if (['xls','xlsx'].includes(ext)) { icon = 'fa-file-excel'; color = 'bg-green-50 text-green-600 border-green-100'; }
+                else if (['ppt','pptx'].includes(ext)) { icon = 'fa-file-powerpoint'; color = 'bg-orange-50 text-orange-600 border-orange-100'; }
+                else if (['jpg','png','jpeg','gif','webp'].includes(ext)) { icon = 'fa-file-image'; color = 'bg-purple-50 text-purple-600 border-purple-100'; }
+                else if (['mp4','webm','mov','ogg'].includes(ext)) { icon = 'fa-file-video'; color = 'bg-indigo-50 text-indigo-600 border-indigo-100'; }
+
+                fileUI = `
+                    <div class="mt-6 p-1 bg-gray-50 rounded-2xl border border-gray-150">
+                        <div class="flex flex-wrap items-center justify-between p-4 gap-4 bg-white rounded-xl">
+                            <div class="flex items-center space-x-4 min-w-[200px] flex-1">
+                                <div class="${color} p-4 rounded-xl border-2 flex items-center justify-center text-2xl shadow-sm shrink-0"><i class="fas ${icon}"></i></div>
+                                <div class="overflow-hidden">
+                                    <p class="text-sm font-black text-gray-800 truncate" title="${mod.fileName}">${mod.fileName}</p>
+                                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">${ext} Document</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button onclick="window.open('${mod.fileUrl}', '_blank')" class="bg-[#0e5c32] text-white font-bold text-[11px] px-4 py-2.5 rounded-lg hover:bg-green-800 transition shadow-sm">BUKA DI TAB BARU</button>
+                                ${canManage ? `
+                                    <button onclick="triggerUpdateFile('${mod.id}')" class="bg-blue-600 text-white font-bold text-[11px] px-4 py-2.5 rounded-lg hover:bg-blue-700 transition shadow-sm">GANTI BERKAS</button>
+                                    <button onclick="deleteFile('${mod.id}')" class="bg-red-50 text-red-600 font-bold text-[11px] px-4 py-2.5 rounded-lg hover:bg-red-100 transition">HAPUS</button>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <!-- PRATINJAU INTERAKTIF YANG TELAH DIPERBAIKI -->
+                        <div class="p-4 bg-gray-100 rounded-b-xl border-t">
+                            <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2"><i class="fas fa-eye"></i> Area Pratinjau Lampiran</h5>
+                            
+                            ${['mp4', 'webm', 'ogg'].includes(ext) ? `
+                                <div class="flex justify-center bg-black rounded-lg overflow-hidden">
+                                    <video controls class="w-full max-h-[300px] bg-black">
+                                        <source src="${mod.fileUrl}">
+                                        Browser Anda tidak mendukung pemutaran video langsung.
+                                    </video>
+                                </div>` : ''}
+
+                            ${['jpg', 'png', 'jpeg', 'gif', 'webp'].includes(ext) ? `
+                                <div class="flex justify-center bg-white p-2 rounded-lg border">
+                                    <img src="${mod.fileUrl}" class="max-h-[300px] object-contain rounded" onerror="this.onerror=null; this.src='https://placehold.co/400x300?text=Gambar+Gagal+Dimuat';">
+                                </div>` : ''}
+
+                            ${['pdf'].includes(ext) ? `
+                                <div class="rounded-lg overflow-hidden border bg-white">
+                                    <iframe src="${mod.fileUrl}" class="w-full h-80 rounded" frameBorder="0"></iframe>
+                                    <p class="text-[10px] text-gray-400 p-2 text-center bg-gray-50 italic">
+                                        Tips: Jika pratinjau PDF tidak muncul otomatis di smartphone, klik tombol "Buka Di Tab Baru" di atas untuk membaca langsung.
+                                    </p>
+                                </div>` : ''}
+
+                            ${!['mp4', 'webm', 'ogg', 'jpg', 'png', 'jpeg', 'gif', 'webp', 'pdf'].includes(ext) ? `
+                                <div class="bg-white p-6 rounded-lg text-center text-xs text-gray-500 border border-dashed">
+                                    <i class="fas fa-file-excel text-3xl text-green-600 mb-2"></i>
+                                    <p class="font-bold text-gray-700">Format file ini (.${ext}) tidak mendukung pratinjau instan.</p>
+                                    <p class="mt-1">Silakan klik "BUKA DI TAB BARU" atau unduh untuk mengakses file lengkap.</p>
+                                </div>` : ''}
+                        </div>
+                    </div>`;
+            } else if (canManage) {
+                fileUI = `
+                    <div class="mt-4 border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:bg-green-50 transition-all group">
+                        <label class="cursor-pointer">
+                            <i class="fas fa-cloud-upload-alt text-4xl text-gray-300 group-hover:text-green-500 mb-2 transition"></i>
+                            <p class="text-sm font-bold text-gray-500 group-hover:text-green-700">Lampirkan Berkas Materi (Word, Excel, PPT, Video, PDF, Gambar)</p>
+                            <input type="file" class="hidden" onchange="uploadLocalFile(this, '${mod.id}')">
+                        </label>
+                    </div>`;
+            }
+
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 border border-gray-100 max-h-[90vh] overflow-y-auto no-scrollbar fade-in">
+                    <div class="flex justify-between items-start border-b pb-4 mb-4 gap-4">
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-green-700">Materi Kelas</span>
+                            <h3 class="font-black text-xl text-gray-900 leading-tight mt-1">${mod.title}</h3>
+                        </div>
+                        <button onclick="closeDetailedModuleModal()" class="text-gray-400 hover:text-red-500 transition text-lg"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">${mod.content}</div>
+                    
+                    <div id="modal-file-area">${fileUI}</div>
+                </div>`;
+            modal.classList.remove('hidden');
+        };
+
+        window.closeDetailedModuleModal = function() {
+            document.getElementById('modal-module-detail').classList.add('hidden');
+            activeDetailedModule = null;
+        };
+
+        // ==============================================================================
+        // 12. LOGIKA MATERI (DOSEN & ADMIN)
+        // ==============================================================================
+        window.handleDirectFileUpload = function(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                let percent = 0;
+                uploadProgress = { fileName: file.name, percent: 0 };
+                render();
+
+                const interval = setInterval(() => {
+                    percent += 10;
+                    if (uploadProgress) {
+                        uploadProgress.percent = percent;
+                        render();
+                    }
+
+                    if (percent >= 100) {
+                        clearInterval(interval);
+                        const newModuleId = 'm' + Date.now();
+                        const fileType = file.type || '';
+                        
+                        selectedCourse.modules.push({
+                            id: newModuleId,
+                            title: file.name.split('.')[0].replace(/_/g, ' ').replace(/-/g, ' '),
+                            content: `Materi berbentuk berkas digital "${file.name}" berhasil diunggah langsung oleh pengampu.`,
+                            fileName: file.name,
+                            fileType: fileType,
+                            fileUrl: URL.createObjectURL(file) 
+                        });
+
+                        uploadProgress = null;
+                        render();
+                        showNotification(`Berkas "${file.name}" berhasil diunggah dan diterbitkan.`, 'success');
+                    }
+                }, 100);
+            }
+        };
+
+        window.uploadLocalFile = (input, modId) => {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                activeModuleUploadId = modId;
+                globalUploadProgress = 0;
+                render();
+
+                const interval = setInterval(() => {
+                    globalUploadProgress += 10;
+                    render();
+                    if (globalUploadProgress >= 100) {
+                        clearInterval(interval);
+                        const mod = selectedCourse.modules.find(m => m.id === modId);
+                        mod.fileName = file.name;
+                        mod.fileType = file.type;
+                        mod.fileUrl = URL.createObjectURL(file);
+                        activeModuleUploadId = null;
+                        showNotification('Berkas lampiran berhasil dipasang!', 'success');
+                        
+                        if(activeDetailedModule && activeDetailedModule.id === modId) {
+                            openDetailedModuleModal(modId);
+                        } else {
+                            render();
+                        }
+                    }
+                }, 100);
+            }
+        };
+
+        window.triggerUpdateFile = (modId) => {
+            const tempInput = document.createElement('input');
+            tempInput.type = 'file';
+            tempInput.onchange = (e) => uploadLocalFile(e.target, modId);
+            tempInput.click();
+        };
+
+        window.deleteFile = (modId) => {
+            showConfirmModal('Apakah Anda ingin menghapus lampiran berkas ini?', () => {
+                const mod = selectedCourse.modules.find(m => m.id === modId);
+                mod.fileName = null;
+                mod.fileUrl = null;
+                mod.fileType = null;
+                showNotification('Lampiran berhasil dihapus', 'success');
+                
+                if(activeDetailedModule && activeDetailedModule.id === modId) {
+                    openDetailedModuleModal(modId);
+                } else {
+                    render();
+                }
+            });
+        };
+
+        window.addModule = () => {
+            selectedCourse.modules.push({
+                id: 'm' + Date.now(),
+                title: 'Materi Baru ' + (selectedCourse.modules.length + 1),
+                content: 'Tuliskan isi modul pembelajaran Anda di sini.',
+                fileName: null,
+                fileType: null,
+                fileUrl: null
+            });
+            render();
+            showNotification('Materi baru berhasil ditambahkan!', 'success');
+        };
+
+        window.saveMod = (id) => {
+            const m = selectedCourse.modules.find(x=>x.id===id);
+            m.title = document.getElementById('e-title').value;
+            m.content = document.getElementById('e-content').value;
+            editingModule = null;
+            showNotification('Materi berhasil disimpan', 'success');
+            render();
+        };
+
+        window.deleteMod = (id) => {
+            showConfirmModal('Apakah Anda yakin ingin menghapus materi modul ini beserta lampirannya?', () => {
+                selectedCourse.modules = selectedCourse.modules.filter(x=>x.id!==id);
+                showNotification('Materi berhasil dihapus.', 'success');
+                render();
+            });
+        };
+
+        window.enrollCourse = function(cId) { 
+            const c = courses.find(x => x.id === cId); 
+            if(c && !c.enrolled.includes(currentUser.id)) { 
+                c.enrolled.push(currentUser.id); 
+                showNotification('Berhasil bergabung ke dalam kelas!', 'success');
+                render(); 
+            } 
+        };
+        
+        window.openCourse = function(cId) { selectedCourse = courses.find(x => x.id === cId); render(); };
+
+        // ==============================================================================
+        // 13. MODUL QUIZ ENGINE (CREATOR, EDITOR & EXAM SHEET)
+        // ==============================================================================
+        window.createNewQuiz = function() {
+            activeQuizEditId = 'NEW';
+            quizFormState = {
+                title: 'Kuis Evaluasi Baru',
+                questions: [
+                    { q: 'Tanaman pangan apa yang menjadi komoditas utama?', options: ['Gandum', 'Padi', 'Jagung', 'Apel'], answer: 1 }
+                ]
+            };
+            render();
+        };
+
+        window.editQuiz = function(quizId) {
+            const quiz = selectedCourse.quizzes.find(q => q.id === quizId);
+            if (quiz) {
+                activeQuizEditId = quizId;
+                quizFormState = JSON.parse(JSON.stringify(quiz));
+                render();
+            }
+        };
+
+        window.deleteQuiz = function(quizId) {
+            showConfirmModal('Apakah Anda yakin ingin menghapus kuis ini secara permanen dari kelas?', () => {
+                selectedCourse.quizzes = selectedCourse.quizzes.filter(q => q.id !== quizId);
+                if (selectedCourse.quizScores && selectedCourse.quizScores[quizId]) {
+                    delete selectedCourse.quizScores[quizId];
+                }
+                showNotification('Kuis berhasil dihapus.', 'success');
+                render();
+            });
+        };
+
+        window.takeQuiz = function(quizId) {
+            activeQuizTakeId = quizId;
+            quizTakerAnswers = {};
+            render();
+        };
+
+        window.syncQuizFormState = function() {
+            const titleInput = document.getElementById('quiz-title-input');
+            if (titleInput) {
+                quizFormState.title = titleInput.value;
+            }
+            
+            quizFormState.questions.forEach((question, qIdx) => {
+                const qInput = document.getElementById(`q-text-${qIdx}`);
+                if (qInput) question.q = qInput.value;
+                
+                question.options.forEach((opt, optIdx) => {
+                    const optInput = document.getElementById(`q-${qIdx}-opt-${optIdx}`);
+                    if (optInput) question.options[optIdx] = optInput.value;
+                });
+                
+                const ansSelect = document.getElementById(`q-${qIdx}-ans`);
+                if (ansSelect) question.answer = parseInt(ansSelect.value);
+            });
+        };
+
+        window.addQuizQuestion = function() {
+            syncQuizFormState();
+            quizFormState.questions.push({ q: '', options: ['', '', '', ''], answer: 0 });
+            render();
+        };
+
+        window.removeQuizQuestion = function(qIdx) {
+            syncQuizFormState();
+            if (quizFormState.questions.length > 1) {
+                quizFormState.questions.splice(qIdx, 1);
+                render();
+            } else {
+                showNotification('Minimal harus terdapat 1 pertanyaan di dalam kuis!', 'error');
+            }
+        };
+
+        window.saveQuiz = function() {
+            syncQuizFormState();
+            
+            if (!quizFormState.title.trim()) {
+                showNotification('Judul kuis tidak boleh kosong!', 'error');
+                return;
+            }
+            
+            for (let i = 0; i < quizFormState.questions.length; i++) {
+                const q = quizFormState.questions[i];
+                if (!q.q.trim()) {
+                    showNotification(`Pertanyaan #${i+1} tidak boleh kosong!`, 'error');
+                    return;
+                }
+                for (let j = 0; j < q.options.length; j++) {
+                    if (!q.options[j].trim()) {
+                        showNotification(`Pilihan ${j+1} pada Pertanyaan #${i+1} tidak boleh kosong!`, 'error');
+                        return;
+                    }
+                }
+            }
+
+            if (activeQuizEditId === 'NEW') {
+                const newQuizId = 'q' + Date.now();
+                const newQuiz = {
+                    id: newQuizId,
+                    title: quizFormState.title,
+                    questions: quizFormState.questions
+                };
+                if (!selectedCourse.quizzes) selectedCourse.quizzes = [];
+                selectedCourse.quizzes.push(newQuiz);
+                if (!selectedCourse.quizScores) selectedCourse.quizScores = {};
+                selectedCourse.quizScores[newQuizId] = {};
+                showNotification('Kuis baru berhasil diterbitkan!', 'success');
+            } else {
+                const quiz = selectedCourse.quizzes.find(q => q.id === activeQuizEditId);
+                if (quiz) {
+                    quiz.title = quizFormState.title;
+                    quiz.questions = quizFormState.questions;
+                    showNotification('Perubahan kuis berhasil disimpan!', 'success');
+                }
+            }
+            
+            activeQuizEditId = null;
+            render();
+        };
+
+        window.cancelQuizEdit = function() {
+            activeQuizEditId = null;
+            render();
+        };
+
+        window.setQuizAnswer = function(qIdx, optIdx) {
+            quizTakerAnswers[qIdx] = optIdx;
+            quizFormState.questions.forEach((_, idx) => {
+                const card = document.getElementById(`q-${qIdx}-optcard-${idx}`);
+                if (card) {
+                    if (idx === optIdx) {
+                        card.className = "p-4 rounded-xl border-2 border-green-600 bg-green-50 text-green-900 font-semibold cursor-pointer transition";
+                    } else {
+                        card.className = "p-4 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 cursor-pointer transition";
+                    }
+                }
+            });
+        };
+
+        window.submitQuizAnswers = function() {
+            const quiz = selectedCourse.quizzes.find(q => q.id === activeQuizTakeId);
+            if (!quiz) return;
+
+            if (Object.keys(quizTakerAnswers).length < quiz.questions.length) {
+                showNotification('Harap menjawab semua pertanyaan sebelum mengumpulkan kuis!', 'error');
+                return;
+            }
+
+            let correctCount = 0;
+            quiz.questions.forEach((q, idx) => {
+                if (quizTakerAnswers[idx] === q.answer) {
+                    correctCount++;
+                }
+            });
+
+            const finalScore = Math.round((correctCount / quiz.questions.length) * 100);
+            
+            if (!selectedCourse.quizScores) selectedCourse.quizScores = {};
+            if (!selectedCourse.quizScores[activeQuizTakeId]) selectedCourse.quizScores[activeQuizTakeId] = {};
+            
+            selectedCourse.quizScores[activeQuizTakeId][currentUser.id] = finalScore;
+            
+            addLog(`Mengerjakan kuis "${quiz.title}" dengan hasil ${finalScore}/100`, currentUser);
+            showAlertModal(`Lembar jawaban Anda telah diterima.<br><br>Hasil Anda: <strong class="text-2xl text-green-700">${finalScore} / 100</strong><br>Berhasil menjawab: <strong>${correctCount}</strong> dari ${quiz.questions.length} soal.`, 'Kuis Selesai');
+            
+            activeQuizTakeId = null;
+            render();
+        };
+
+        window.cancelQuizTake = function() {
+            showConfirmModal('Apakah Anda yakin ingin membatalkan kuis? Seluruh lembar jawaban Anda saat ini akan dihapus.', () => {
+                activeQuizTakeId = null;
+                render();
+            });
+        };
+
+        function renderQuizEditor(container) {
+            let questionsHtml = quizFormState.questions.map((q, qIdx) => `
+                <div class="bg-gray-50 p-5 rounded-2xl border border-gray-200 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-black text-green-700 uppercase">Pertanyaan #${qIdx + 1}</span>
+                        <button onclick="removeQuizQuestion(${qIdx})" class="text-red-600 hover:text-red-800 text-xs font-bold"><i class="fas fa-trash-alt mr-1"></i> Hapus Soal</button>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">PERTANYAAN</label>
+                        <input type="text" id="q-text-${qIdx}" value="${q.q}" placeholder="Masukkan teks pertanyaan..." class="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-1 focus:ring-green-500" required>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        ${q.options.map((opt, optIdx) => `
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 mb-0.5">PILIHAN ${String.fromCharCode(65 + optIdx)}</label>
+                                <input type="text" id="q-${qIdx}-opt-${optIdx}" value="${opt}" placeholder="Pilihan jawaban..." class="w-full p-2 border rounded text-xs outline-none focus:ring-1 focus:ring-green-500" required>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">JAWABAN BENAR</label>
+                        <select id="q-${qIdx}-ans" class="p-2 border rounded bg-white text-xs outline-none focus:ring-1 focus:ring-green-500">
+                            <option value="0" ${q.answer === 0 ? 'selected' : ''}>Pilihan A</option>
+                            <option value="1" ${q.answer === 1 ? 'selected' : ''}>Pilihan B</option>
+                            <option value="2" ${q.answer === 2 ? 'selected' : ''}>Pilihan C</option>
+                            <option value="3" ${q.answer === 3 ? 'selected' : ''}>Pilihan D</option>
+                        </select>
+                    </div>
+                </div>`).join('');
+
+            container.innerHTML = `
+                <div class="max-w-4xl bg-white p-6 rounded-2xl border shadow-sm fade-in space-y-6">
+                    <div class="border-b pb-3 flex justify-between items-center">
+                        <div>
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Pengaturan Evaluasi</span>
+                            <h2 class="text-xl font-bold text-gray-800 mt-1">Pembuat & Editor Kuis</h2>
+                        </div>
+                        <button onclick="cancelQuizEdit()" class="text-gray-400 hover:text-red-500 transition text-lg"><i class="fas fa-times"></i></button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">JUDUL KUIS / EVALUASI</label>
+                            <input type="text" id="quiz-title-input" value="${quizFormState.title}" placeholder="Contoh: Kuis Evaluasi Bab I" class="w-full p-2.5 border rounded-lg text-sm font-semibold outline-none focus:ring-2 focus:ring-green-500" required>
+                        </div>
+
+                        <div class="space-y-4 pt-4">
+                            <h3 class="text-sm font-bold text-gray-700 border-b pb-2"><i class="fas fa-list-ol mr-1.5 text-green-700"></i> Daftar Pertanyaan</h3>
+                            ${questionsHtml}
+                        </div>
+
+                        <div class="pt-4 flex flex-wrap gap-2">
+                            <button onclick="addQuizQuestion()" class="bg-blue-50 text-blue-700 border border-blue-200 px-4 py-2.5 rounded-lg text-xs font-bold hover:bg-blue-100 transition"><i class="fas fa-plus mr-1.5"></i> Tambah Pertanyaan</button>
+                        </div>
+
+                        <div class="border-t pt-6 flex justify-end gap-2">
+                            <button onclick="cancelQuizEdit()" class="border px-5 py-2.5 bg-white text-gray-600 rounded-lg text-sm font-semibold hover:bg-gray-50 transition">Batal</button>
+                            <button onclick="saveQuiz()" class="bg-green-700 hover:bg-green-800 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-md">Simpan & Terbitkan</button>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        function renderQuizTaker(container) {
+            const quiz = selectedCourse.quizzes.find(q => q.id === activeQuizTakeId);
+            if (!quiz) return;
+
+            let questionsHtml = quiz.questions.map((q, qIdx) => `
+                <div class="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+                    <p class="text-xs font-bold text-green-700 uppercase tracking-widest">Pertanyaan #${qIdx + 1} dari ${quiz.questions.length}</p>
+                    <h4 class="font-bold text-gray-855 text-base leading-relaxed">${q.q}</h4>
+                    <div class="grid grid-cols-1 gap-2 pt-2">
+                        ${q.options.map((opt, optIdx) => {
+                            const isSelected = quizTakerAnswers[qIdx] === optIdx;
+                            const cardClass = isSelected 
+                                ? "p-4 rounded-xl border-2 border-green-600 bg-green-50 text-green-900 font-semibold cursor-pointer transition"
+                                : "p-4 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 cursor-pointer transition";
+                            return `
+                                <div id="q-${qIdx}-optcard-${optIdx}" onclick="setQuizAnswer(${qIdx}, ${optIdx})" class="${cardClass}">
+                                    <span class="inline-block w-6 h-6 rounded-full bg-gray-100 text-center font-bold text-xs leading-6 mr-3 text-gray-600">${String.fromCharCode(65 + optIdx)}</span>
+                                    <span>${opt}</span>
+                                </div>`;
+                        }).join('')}
+                    </div>
+                </div>`).join('');
+
+            container.innerHTML = `
+                <div class="max-w-3xl space-y-6 fade-in">
+                    <div class="bg-[#0e5c32] text-white p-6 rounded-2xl shadow-sm flex justify-between items-center">
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-green-200">${selectedCourse.title}</span>
+                            <h2 class="text-xl sm:text-2xl font-black tracking-tight mt-1">${quiz.title}</h2>
+                        </div>
+                        <button onclick="cancelQuizTake()" class="bg-[#094122] hover:bg-red-700 p-2.5 rounded-lg border border-[#166534] transition text-sm font-semibold flex items-center gap-1.5"><i class="fas fa-sign-out-alt"></i> Batal</button>
+                    </div>
+
+                    <div class="space-y-4">
+                        ${questionsHtml}
+                    </div>
+
+                    <div class="pt-6 flex justify-end gap-2">
+                        <button onclick="cancelQuizTake()" class="border px-6 py-3 bg-white text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 transition">Batalkan Kuis</button>
+                        <button onclick="submitQuizAnswers()" class="bg-green-700 hover:bg-green-800 text-white px-8 py-3 rounded-xl text-sm font-black tracking-wide shadow-lg transition">Kirim Jawaban</button>
+                    </div>
+                </div>`;
+        }
+
+        // ==============================================================================
+        // 14. LOG PENGGUNA (UNTUK ADMIN)
         // ==============================================================================
         function getSystemLogsHTML() {
             return `
-                <div class="bg-white rounded-lg shadow-sm border p-4 md:p-6">
+                <div class="bg-white rounded-lg shadow-sm border p-4 md:p-6 fade-in">
                     <div class="flex justify-between items-center mb-6 border-b pb-4">
-                        <h2 class="text-xl md:text-2xl font-bold text-gray-800 flex items-center"><i class="fas fa-list text-gray-800 mr-2"></i> Log Pengguna</h2>
-                        <div class="bg-gray-800 text-white px-3 py-1 rounded-md font-mono text-sm flex items-center shadow-inner">
-                            <i class="fas fa-server mr-2 text-green-400"></i> Waktu Server: <span id="live-clock" class="ml-2 font-bold">${getFormattedTime()}</span>
+                        <h2 class="text-xl md:text-2xl font-bold text-gray-800 flex items-center"><i class="fas fa-list text-gray-800 mr-2"></i> Log Aktivitas Sistem</h2>
+                        <div class="bg-gray-800 text-white px-3 py-1.5 rounded-md font-mono text-xs flex items-center shadow-inner">
+                            <i class="fas fa-server mr-2 text-green-400"></i> Waktu Server: <span id="log-clock" class="ml-2 font-bold">${getFormattedTime()}</span>
                         </div>
                     </div>
                     
                     <div class="mb-4 flex flex-wrap gap-2">
-                        <button onclick="logFilterRole='all'; renderContent();" class="px-3 py-1 text-sm rounded ${logFilterRole==='all' ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Semua Role</button>
-                        <button onclick="logFilterRole='admin'; renderContent();" class="px-3 py-1 text-sm rounded ${logFilterRole==='admin' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Admin</button>
-                        <button onclick="logFilterRole='dosen'; renderContent();" class="px-3 py-1 text-sm rounded ${logFilterRole==='dosen' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Dosen</button>
-                        <button onclick="logFilterRole='mahasiswa'; renderContent();" class="px-3 py-1 text-sm rounded ${logFilterRole==='mahasiswa' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Mahasiswa</button>
+                        <button onclick="logFilterRole='all'; render();" class="px-3 py-1 text-sm rounded ${logFilterRole==='all' ? 'bg-gray-800 text-white font-semibold' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Semua Role</button>
+                        <button onclick="logFilterRole='admin'; render();" class="px-3 py-1 text-sm rounded ${logFilterRole==='admin' ? 'bg-red-600 text-white font-semibold' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Admin</button>
+                        <button onclick="logFilterRole='dosen'; render();" class="px-3 py-1 text-sm rounded ${logFilterRole==='dosen' ? 'bg-blue-600 text-white font-semibold' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Dosen</button>
+                        <button onclick="logFilterRole='mahasiswa'; render();" class="px-3 py-1 text-sm rounded ${logFilterRole==='mahasiswa' ? 'bg-green-600 text-white font-semibold' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Mahasiswa</button>
                     </div>
 
                     <div class="overflow-x-auto rounded border">
-                        <table class="w-full text-left border-collapse bg-white">
+                        <table class="w-full text-left border-collapse bg-white whitespace-nowrap">
                             <thead>
                                 <tr class="bg-gray-100 border-b">
                                     <th class="p-3 text-sm font-semibold w-1/4">Waktu</th>
@@ -639,32 +1869,33 @@
                                         <td class="p-3 text-sm text-gray-600">${l.time}</td>
                                         <td class="p-3 text-sm font-medium text-gray-800">${l.user}</td>
                                         <td class="p-3 text-sm">
-                                            <span class="px-2 py-1 rounded-full text-xs font-semibold ${l.role === 'admin' ? 'bg-red-100 text-red-700' : l.role === 'dosen' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">
+                                            <span class="px-2.5 py-1 rounded-full text-xs font-bold ${l.role === 'admin' ? 'bg-red-100 text-red-700' : l.role === 'dosen' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">
                                                 ${l.role.toUpperCase()}
                                             </span>
                                         </td>
                                         <td class="p-3 text-sm text-gray-700">${l.action}</td>
-                                    </tr>
-                                `).join('') || '<tr><td colspan="4" class="p-4 text-center text-gray-500">Belum ada aktivitas tercatat untuk filter ini.</td></tr>'}
+                                    </tr>`).join('') || '<tr><td colspan="4" class="p-4 text-center text-gray-500">Belum ada aktivitas tercatat untuk filter ini.</td></tr>'}
                             </tbody>
                         </table>
                     </div>
-                </div>
-            `;
+                </div>`;
+        }
+
+        function initClock() {
+            const clockEl = document.getElementById('log-clock');
+            if(clockEl) clockEl.textContent = getFormattedTime();
         }
 
         // ==============================================================================
-        // 10. LAPORAN MAHASISWA
+        // 15. LAPORAN & HISTORI MAHASISWA
         // ==============================================================================
         function getReportsHTML() {
             let enrolledCourses = courses.filter(c => c.enrolled.includes(currentUser.id));
             
-            // Generate list Kelas
             let coursesHtml = enrolledCourses.length > 0 
-                ? enrolledCourses.map(c => `<li class="p-4 border-b bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center"><span class="font-bold text-gray-800">${c.title}</span><span class="text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded mt-2 md:mt-0">${c.department}</span></li>`).join('') 
+                ? enrolledCourses.map(c => `<li class="p-4 border-b bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center"><span class="font-bold text-gray-800">${c.title}</span><span class="text-sm text-gray-500 bg-gray-200 px-2.5 py-1 rounded-lg mt-2 md:mt-0 font-semibold">${c.department}</span></li>`).join('') 
                 : '<p class="p-4 text-gray-500 italic">Belum ada riwayat kelas yang diikuti.</p>';
 
-            // Generate list Kuis
             let quizHtml = '';
             let hasQuiz = false;
             enrolledCourses.forEach(c => {
@@ -685,515 +1916,21 @@
             if (!hasQuiz) quizHtml = '<p class="p-4 text-gray-500 italic">Belum ada riwayat pengerjaan kuis / ujian.</p>';
 
             return `
-                <div class="max-w-5xl mx-auto">
+                <div class="max-w-5xl mx-auto fade-in">
                     <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4"><i class="fas fa-chart-line mr-2 text-blue-600"></i> Laporan Mahasiswa</h2>
                     
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Panel Riwayat Kelas -->
                         <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-                            <div class="bg-blue-600 text-white p-4"><h3 class="font-bold"><i class="fas fa-chalkboard-teacher mr-2"></i> Riwayat Kelas yang Diikuti</h3></div>
+                            <div class="bg-[#0e5c32] text-white p-4"><h3 class="font-bold"><i class="fas fa-chalkboard-teacher mr-2"></i> Riwayat Kelas yang Diikuti</h3></div>
                             <ul class="list-none">${coursesHtml}</ul>
                         </div>
                         
-                        <!-- Panel Riwayat Kuis -->
                         <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
                             <div class="bg-green-600 text-white p-4"><h3 class="font-bold"><i class="fas fa-tasks mr-2"></i> Riwayat & Nilai Kuis</h3></div>
                             <ul class="list-none">${quizHtml}</ul>
                         </div>
                     </div>
-                </div>
-            `;
-        }
-
-        // ==============================================================================
-        // 11. MENU DAFTAR KELAS & MATERI
-        // ==============================================================================
-        function getCoursesHTML() {
-            let topBar = `<div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4"><h2 class="text-2xl font-bold text-gray-800">Daftar Mata Kuliah</h2>`;
-            if (currentUser.role === 'dosen') {
-                topBar += `<button onclick="dosenEditingCourse='NEW'; renderContent();" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm w-fit"><i class="fas fa-plus mr-2"></i> Tambah Kelas</button>`;
-            }
-            topBar += `</div>`;
-
-            let html = topBar + '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
-            
-            courses.forEach(course => {
-                const isEnrolled = course.enrolled.includes(currentUser.id);
-                const isMyCourse = course.lecturerId === currentUser.id;
-                
-                // Filter
-                if (currentUser.role === 'dosen' && !isMyCourse) return;
-                
-                const lecturer = users.find(u => u.id === course.lecturerId);
-                const totalMateri = course.modules ? course.modules.length : 0;
-                const totalKuis = course.quizzes ? course.quizzes.length : 0;
-                
-                let btnHtml = '';
-                if (currentUser.role === 'mahasiswa' && !isEnrolled) {
-                    btnHtml = `<button onclick="enrollCourse('${course.id}')" class="text-sm bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1 rounded font-medium">Daftar Kelas</button>`;
-                } else {
-                    const btnText = currentUser.role === 'dosen' ? 'Kelola Materi & Kuis' : currentUser.role === 'admin' ? 'Pantau Kelas' : 'Masuk Kelas';
-                    btnHtml = `<button onclick="openCourse('${course.id}')" class="text-sm bg-green-50 text-green-600 hover:bg-green-100 px-3 py-1 rounded font-medium flex items-center">${btnText} <i class="fas fa-chevron-right ml-1 text-xs"></i></button>`;
-                }
-
-                let dosenActions = '';
-                if (currentUser.role === 'dosen' && isMyCourse) {
-                    dosenActions = `
-                        <div class="absolute top-2 right-2 flex space-x-1 z-10">
-                            <button onclick="dosenEditingCourse='${course.id}'; renderContent();" class="bg-white/90 text-blue-600 p-2 rounded shadow hover:bg-white text-xs"><i class="fas fa-edit"></i></button>
-                            <button onclick="deleteCourse('${course.id}')" class="bg-white/90 text-red-600 p-2 rounded shadow hover:bg-white text-xs"><i class="fas fa-trash"></i></button>
-                        </div>
-                    `;
-                }
-
-                html += `
-                    <div class="bg-white rounded-lg shadow border border-gray-100 overflow-hidden relative group transition hover:shadow-md">
-                        ${dosenActions}
-                        ${currentUser.role === 'admin' ? `<div class="absolute top-2 left-2 bg-purple-600 text-white text-xs px-2 py-1 rounded shadow-sm z-10">Admin</div>` : ''}
-                        <div class="h-32 bg-green-600 flex items-center justify-center">
-                            <i class="fas fa-chalkboard text-4xl text-white opacity-50"></i>
-                        </div>
-                        <div class="p-4">
-                            <h3 class="font-bold text-lg text-gray-800 mb-1 truncate">${course.title}</h3>
-                            <p class="text-sm text-gray-500 mb-4">${course.department} &bull; ${lecturer ? lecturer.name : '-'}</p>
-                            <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
-                                <span class="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded">${totalMateri} Materi | ${totalKuis} Kuis</span>
-                                ${btnHtml}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            return html;
-        }
-
-        function getCourseDetailHTML() {
-            const lecturer = users.find(u => u.id === selectedCourse.lecturerId);
-            const isMyCourse = currentUser.role === 'dosen' && currentUser.id === selectedCourse.lecturerId;
-
-            let html = `
-                <button onclick="closeCourse()" class="mb-4 text-green-600 hover:text-green-800 font-medium flex items-center text-sm">
-                    <i class="fas fa-arrow-left mr-2"></i> Kembali ke Daftar Kelas
-                </button>
-                <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2">${selectedCourse.title}</h2>
-                    <p class="text-gray-600">Dosen Pengampu: ${lecturer ? lecturer.name : '-'}</p>
-                </div>
-            `;
-
-            let addModBtn = isMyCourse ? `<button onclick="addModule()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm shadow-sm"><i class="fas fa-cloud-upload-alt mr-1"></i> Upload File / Materi</button>` : '';
-            html += `<div class="flex flex-wrap justify-between items-center mb-4 gap-2"><h3 class="text-xl font-bold text-gray-800"><i class="fas fa-book-open mr-2 text-green-600"></i> Materi Pembelajaran</h3>${addModBtn}</div><div class="space-y-4 mb-8">`;
-            
-            if (!selectedCourse.modules || selectedCourse.modules.length === 0) {
-                html += `<div class="bg-white rounded border p-8 text-center text-gray-500 border-dashed border-2">Belum ada materi.</div>`;
-            } else {
-                selectedCourse.modules.forEach(mod => {
-                    if (editingModule === mod.id) {
-                        html += `
-                            <div class="bg-white rounded border p-5 border-l-4 border-blue-500 shadow-md">
-                                <input type="text" id="edit-mod-title" value="${mod.title}" class="w-full text-lg p-2 border rounded outline-none mb-3">
-                                <textarea id="edit-mod-content" class="w-full p-2 border rounded outline-none min-h-[100px] mb-3">${mod.content}</textarea>
-                                <div class="flex justify-end gap-2 pt-3"><button onclick="editingModule=null; renderContent();" class="px-4 py-2 border rounded text-sm">Batal</button><button onclick="saveModule('${mod.id}')" class="px-4 py-2 bg-blue-600 text-white rounded text-sm">Simpan</button></div>
-                            </div>`;
-                    } else {
-                        let actions = isMyCourse ? `<button onclick="editingModule='${mod.id}'; renderContent();" class="text-blue-600 px-2 text-sm"><i class="fas fa-edit"></i></button><button onclick="deleteModule('${mod.id}')" class="text-red-600 px-2 text-sm"><i class="fas fa-trash"></i></button>` : '';
-                        html += `
-                            <div class="bg-white rounded-lg border shadow-sm"><div class="bg-gray-50 p-4 border-b flex justify-between">
-                            <h4 class="font-bold text-gray-800"><i class="fas fa-folder text-green-600 mr-2"></i>${mod.title}</h4><div>${actions}</div></div>
-                            <div class="p-5 text-sm text-gray-700 whitespace-pre-wrap">${mod.content}</div></div>`;
-                    }
-                });
-            }
-            html += `</div>`;
-
-            let addQuizBtn = isMyCourse ? `<button onclick="createNewQuiz()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm shadow-sm"><i class="fas fa-plus mr-1"></i> Buat Kuis Baru</button>` : '';
-            html += `<div class="flex flex-wrap justify-between items-center mb-4 gap-2"><h3 class="text-xl font-bold text-gray-800"><i class="fas fa-tasks mr-2 text-purple-600"></i> Evaluasi & Kuis</h3>${addQuizBtn}</div><div class="space-y-4">`;
-
-            if (!selectedCourse.quizzes || selectedCourse.quizzes.length === 0) {
-                html += `<div class="bg-white rounded border p-8 text-center text-gray-500 border-dashed border-2">Belum ada kuis/ujian tersedia.</div>`;
-            } else {
-                selectedCourse.quizzes.forEach(quiz => {
-                    let score = (selectedCourse.quizScores && selectedCourse.quizScores[quiz.id] && selectedCourse.quizScores[quiz.id][currentUser.id] !== undefined) 
-                                ? selectedCourse.quizScores[quiz.id][currentUser.id] : null;
-
-                    let qActions = '';
-                    if (isMyCourse) {
-                        qActions = `<button onclick="editQuiz('${quiz.id}')" class="text-blue-600 px-2 text-sm"><i class="fas fa-edit"></i> Edit</button>
-                                    <button onclick="deleteQuiz('${quiz.id}')" class="text-red-600 px-2 text-sm"><i class="fas fa-trash"></i> Hapus</button>`;
-                    } else if (currentUser.role === 'mahasiswa') {
-                        if (score !== null) {
-                            qActions = `<span class="bg-green-100 text-green-800 px-3 py-1 rounded font-bold text-sm">Nilai: ${score}/100</span>`;
-                        } else {
-                            qActions = `<button onclick="takeQuiz('${quiz.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm shadow-sm"><i class="fas fa-pencil-alt mr-1"></i> Kerjakan Kuis</button>`;
-                        }
-                    }
-
-                    html += `
-                        <div class="bg-white rounded-lg border shadow-sm p-4 flex justify-between items-center">
-                            <div><h4 class="font-bold text-gray-800">${quiz.title}</h4><p class="text-xs text-gray-500">${quiz.questions.length} Pertanyaan Pilihan Ganda</p></div>
-                            <div class="flex items-center gap-2">${qActions}</div>
-                        </div>`;
-                });
-            }
-            html += `</div>`;
-
-            return html;
-        }
-
-        // ==============================================================================
-        // 12. FITUR KUIS (FORM EDITOR UNTUK DOSEN)
-        // ==============================================================================
-        function createNewQuiz() {
-            currentQuizData = { id: 'q' + Date.now(), title: 'Kuis Baru', questions: [] };
-            isEditingQuiz = true;
-            renderContent();
-        }
-
-        function editQuiz(quizId) {
-            const qz = selectedCourse.quizzes.find(q => q.id === quizId);
-            currentQuizData = JSON.parse(JSON.stringify(qz)); 
-            isEditingQuiz = true;
-            renderContent();
-        }
-
-        function getQuizEditorHTML() {
-            let html = `
-                <div class="bg-white p-6 rounded-lg shadow border">
-                    <h2 class="text-xl font-bold mb-4">Formulir Pembuatan Kuis</h2>
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium mb-1">Judul Kuis</label>
-                        <input type="text" id="quiz-title-input" value="${currentQuizData.title}" class="w-full p-2 border rounded focus:ring-1 focus:ring-purple-500" placeholder="Misal: Ujian Tengah Semester">
-                    </div>
-                    <div id="quiz-questions-container" class="space-y-6">
-            `;
-
-            if (currentQuizData.questions.length === 0) {
-                html += `<div class="text-center p-6 text-gray-400 border-2 border-dashed rounded">Belum ada pertanyaan. Klik tombol di bawah untuk menambah.</div>`;
-            } else {
-                currentQuizData.questions.forEach((q, idx) => {
-                    html += `
-                    <div class="p-4 border border-gray-200 rounded bg-gray-50 relative">
-                        <button onclick="removeQuestion(${idx})" class="absolute top-2 right-2 text-red-500 hover:text-red-700" title="Hapus Soal"><i class="fas fa-times"></i></button>
-                        <label class="font-semibold text-sm mb-2 block">Soal #${idx + 1}</label>
-                        <input type="text" id="q-text-${idx}" value="${q.q}" class="w-full p-2 border rounded mb-3" placeholder="Masukkan pertanyaan...">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            ${[0,1,2,3].map(optIdx => `
-                                <div class="flex items-center bg-white p-2 border rounded">
-                                    <input type="radio" name="q-ans-${idx}" value="${optIdx}" ${q.answer === optIdx ? 'checked' : ''} class="mr-2">
-                                    <input type="text" id="q-opt-${idx}-${optIdx}" value="${q.options[optIdx] || ''}" class="w-full text-sm outline-none" placeholder="Opsi ${String.fromCharCode(65+optIdx)}">
-                                </div>
-                            `).join('')}
-                        </div>
-                        <p class="text-xs text-gray-500 mt-2">* Pilih radio button pada opsi yang merupakan jawaban benar.</p>
-                    </div>`;
-                });
-            }
-
-            html += `
-                    </div>
-                    <div class="mt-6 flex flex-wrap gap-2">
-                        <button onclick="addQuestion()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 text-sm"><i class="fas fa-plus mr-1"></i> Tambah Pertanyaan</button>
-                        <button onclick="saveQuizData()" class="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700 text-sm shadow"><i class="fas fa-save mr-1"></i> Simpan Kuis</button>
-                        <button onclick="isEditingQuiz=false; renderContent();" class="border px-4 py-2 rounded hover:bg-gray-50 text-sm">Batal</button>
-                    </div>
-                </div>
-            `;
-            return html;
-        }
-
-        function addQuestion() {
-            syncQuizInputs(); 
-            currentQuizData.questions.push({ q: '', options: ['','','',''], answer: 0 });
-            renderContent();
-        }
-
-        function removeQuestion(idx) {
-            syncQuizInputs();
-            currentQuizData.questions.splice(idx, 1);
-            renderContent();
-        }
-
-        function syncQuizInputs() {
-            currentQuizData.title = document.getElementById('quiz-title-input').value;
-            currentQuizData.questions.forEach((q, idx) => {
-                const qEl = document.getElementById(`q-text-${idx}`);
-                if (qEl) {
-                    q.q = qEl.value;
-                    for (let i=0; i<4; i++) { q.options[i] = document.getElementById(`q-opt-${idx}-${i}`).value; }
-                    const ansEl = document.querySelector(`input[name="q-ans-${idx}"]:checked`);
-                    if (ansEl) q.answer = parseInt(ansEl.value);
-                }
-            });
-        }
-
-        function saveQuizData() {
-            syncQuizInputs();
-            if (!selectedCourse.quizzes) selectedCourse.quizzes = [];
-            const idx = selectedCourse.quizzes.findIndex(q => q.id === currentQuizData.id);
-            if (idx >= 0) selectedCourse.quizzes[idx] = currentQuizData;
-            else selectedCourse.quizzes.push(currentQuizData);
-            
-            isEditingQuiz = false;
-            renderContent();
-        }
-
-        function deleteQuiz(quizId) {
-            if(confirm('Hapus kuis ini? Semua data nilai mahasiswa untuk kuis ini juga akan hilang.')) {
-                selectedCourse.quizzes = selectedCourse.quizzes.filter(q => q.id !== quizId);
-                renderContent();
-            }
-        }
-
-        // ==============================================================================
-        // 13. FITUR MAHASISWA MENGERJAKAN KUIS
-        // ==============================================================================
-        function takeQuiz(quizId) {
-            takingQuizId = quizId;
-            renderContent();
-        }
-
-        function getQuizTakerHTML() {
-            const quiz = selectedCourse.quizzes.find(q => q.id === takingQuizId);
-            let html = `
-                <div class="bg-white p-6 md:p-8 rounded-lg shadow-lg border max-w-3xl mx-auto">
-                    <h2 class="text-2xl font-bold mb-2">${quiz.title}</h2>
-                    <p class="text-sm text-gray-500 mb-6 border-b pb-4">Mata Kuliah: ${selectedCourse.title} <br> Pastikan koneksi stabil. Jangan refresh halaman saat mengerjakan.</p>
-                    <form id="quiz-take-form" class="space-y-6">
-            `;
-
-            quiz.questions.forEach((q, idx) => {
-                html += `
-                    <div class="mb-4">
-                        <p class="font-medium text-gray-800 mb-3">${idx + 1}. ${q.q}</p>
-                        <div class="space-y-2 pl-4">
-                            ${q.options.map((opt, optIdx) => `
-                                <label class="flex items-center cursor-pointer p-2 rounded hover:bg-green-50 border border-transparent hover:border-green-200 transition">
-                                    <input type="radio" name="take-ans-${idx}" value="${optIdx}" class="mr-3" required>
-                                    <span class="text-sm">${opt}</span>
-                                </label>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            });
-
-            html += `
-                        <div class="pt-6 border-t flex gap-3">
-                            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 shadow font-semibold">Kirim Jawaban</button>
-                            <button type="button" onclick="takingQuizId=null; renderContent();" class="border px-4 py-2 rounded hover:bg-gray-50">Batal (Kembali)</button>
-                        </div>
-                    </form>
-                </div>
-            `;
-
-            setTimeout(() => {
-                document.getElementById('quiz-take-form').addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    let correctCount = 0;
-                    quiz.questions.forEach((q, idx) => {
-                        const ansEl = document.querySelector(`input[name="take-ans-${idx}"]:checked`);
-                        if (ansEl && parseInt(ansEl.value) === q.answer) {
-                            correctCount++;
-                        }
-                    });
-                    
-                    const score = Math.round((correctCount / quiz.questions.length) * 100);
-                    if (!selectedCourse.quizScores) selectedCourse.quizScores = {};
-                    if (!selectedCourse.quizScores[quiz.id]) selectedCourse.quizScores[quiz.id] = {};
-                    
-                    selectedCourse.quizScores[quiz.id][currentUser.id] = score;
-                    
-                    alert(`Kuis selesai! Nilai Anda: ${score}`);
-                    takingQuizId = null;
-                    renderContent();
-                });
-            }, 0);
-
-            return html;
-        }
-
-        // ==============================================================================
-        // 14. FUNGSI LOGIKA EVENT LAINNYA & INISIALISASI
-        // ==============================================================================
-        
-        // --- Form Profil & Form Kelas ---
-        function attachProfileEvents() {
-            const form = document.getElementById('profile-form');
-            if(form) form.addEventListener('submit', handleProfileSubmit);
-        }
-
-        function handleProfileSubmit(e) {
-            e.preventDefault();
-            if (currentUser.role === 'admin') {
-                currentUser.name = document.getElementById('p-name').value;
-            } else {
-                const emailVal = document.getElementById('p-email').value;
-                if (currentUser.role === 'mahasiswa' && emailVal && !emailVal.endsWith('@mhs.sriwigama.ac.id')) return alert('Email mahasiswa harus menggunakan domain @mhs.sriwigama.ac.id');
-                else if (currentUser.role === 'dosen' && emailVal && !emailVal.endsWith('@sriwigama.ac.id')) return alert('Email dosen harus menggunakan domain @sriwigama.ac.id');
-                currentUser.email = emailVal;
-                currentUser.phone = document.getElementById('p-phone').value;
-            }
-
-            const newPass = document.getElementById('p-pass').value;
-            if(newPass && newPass.trim() !== '') currentUser.password = newPass;
-            
-            const idx = users.findIndex(u => u.id === currentUser.id);
-            if(idx !== -1) users[idx] = currentUser;
-
-            addLog('Mengubah data profil', currentUser);
-            profileSuccessMsg = 'Profil berhasil diperbarui!';
-            renderMainLayout(); 
-        }
-
-        // --- Simulasi Import Excel ---
-        window.simulateExcelImport = function(inputElement) {
-            if(inputElement.files.length > 0) {
-                const fileName = inputElement.files[0].name;
-                inputElement.value = ''; 
-                setTimeout(() => {
-                    alert(`Berhasil! Data dari file "${fileName}" berhasil diimpor.`);
-                    renderContent();
-                }, 800);
-            }
-        };
-
-        // --- Export ke Excel ---
-        window.exportToExcel = function() {
-            if (typeof XLSX !== 'undefined') {
-                const dataToExport = users.map(u => ({
-                    'ID Pengguna / NIP / NIM': u.id,
-                    'Username': u.username,
-                    'Peran': u.role.toUpperCase(),
-                    'Nama Lengkap': u.name,
-                    'Email': u.email || '-',
-                    'Nomor Telepon': u.phone || '-',
-                    'Departemen / Program Studi': u.department || u.major || '-',
-                    'Semester': u.semester || '-'
-                }));
-
-                const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "Data Pengguna");
-                XLSX.writeFile(workbook, "Data_Pengguna_STIPER.xlsx");
-                addLog('Melakukan Export Data Excel', currentUser);
-            } else {
-                alert('Library Excel belum termuat, silakan periksa koneksi internet Anda.');
-            }
-        };
-
-        function attachManageUsersEvents() {
-            const form = document.getElementById('admin-user-form');
-            if(form) {
-                form.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    const isNew = adminEditingUser === 'NEW';
-                    const role = document.getElementById('au-role').value;
-                    const name = document.getElementById('au-name').value;
-                    
-                    let targetUser;
-                    if (isNew) {
-                        const uname = document.getElementById('au-user').value;
-                        if(users.some(x => x.username === uname)) return alert('Username sudah dipakai!');
-                        // Membuat ID random khusus dummy import. Normalnya disesuaikan form NIM/NIP.
-                        const newId = 'new' + Date.now(); 
-                        targetUser = { id: newId, username: uname, password: 'password123', role: role, name: name, nip: newId, firstAccess: '-', lastAccess: '-' };
-                        users.push(targetUser);
-                    } else {
-                        targetUser = users.find(u => u.id === adminEditingUser);
-                        targetUser.role = role;
-                        targetUser.name = name;
-                    }
-                    
-                    if(role === 'mahasiswa') {
-                        targetUser.nip = document.getElementById('au-nip').value;
-                        targetUser.id = targetUser.nip;
-                        targetUser.major = document.getElementById('au-dep').value;
-                        targetUser.semester = document.getElementById('au-sem').value;
-                        delete targetUser.department;
-                    } else if (role === 'dosen') {
-                        targetUser.nip = document.getElementById('au-nip').value;
-                        targetUser.id = targetUser.nip;
-                        targetUser.department = document.getElementById('au-dep').value;
-                        delete targetUser.major;
-                        delete targetUser.semester;
-                    }
-
-                    if(!isNew && currentUser.id === adminEditingUser) currentUser = targetUser;
-                    
-                    adminEditingUser = null;
-                    alert(isNew ? 'Pengguna baru berhasil ditambahkan.' : 'Data pengguna diperbarui.');
-                    renderMainLayout(); 
-                });
-            }
-        }
-
-        // ==============================================================================
-        // 15. GLOBAL ACTIONS 
-        // ==============================================================================
-        window.toggleSidebar = function() { isSidebarOpen = !isSidebarOpen; renderMainLayout(); };
-        window.changeTab = function(tab) { activeTab = tab; selectedCourse = null; editingModule = null; dosenEditingCourse = null; adminEditingUser = null; adminResettingUser = null; takingQuizId = null; isEditingQuiz = false; renderContent(); renderSidebarMenu(); };
-        window.logout = function() { addLog('Logout dari sistem', currentUser); currentUser = null; render(); };
-        window.enrollCourse = function(cId) { const c = courses.find(x => x.id === cId); if(c && !c.enrolled.includes(currentUser.id)) { c.enrolled.push(currentUser.id); renderContent(); } };
-        window.openCourse = function(cId) { selectedCourse = courses.find(x => x.id === cId); renderContent(); };
-        window.closeCourse = function() { selectedCourse = null; editingModule = null; takingQuizId = null; isEditingQuiz = false; renderContent(); };
-
-        // Admin Reset Password
-        function attachResetPasswordEvents() {
-            const form = document.getElementById('admin-reset-form');
-            if(form) {
-                form.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    const newPass = document.getElementById('ar-pass').value;
-                    const u = users.find(x => x.id === adminResettingUser);
-                    if(u) { u.password = newPass; addLog('Mereset password pengguna: ' + u.name, currentUser); }
-                    adminResettingUser = null;
-                    alert('Password pengguna berhasil direset.');
-                    renderMainLayout();
-                });
-            }
-        }
-        window.deleteUser = function(uId) { if(uId !== currentUser.id && confirm('Hapus pengguna ini?')) { users = users.filter(u => u.id !== uId); renderContent(); } };
-
-        // Form Dosen Kelas
-        function getDosenCourseFormHTML() {
-            const isNew = dosenEditingCourse === 'NEW';
-            const c = isNew ? { title: '', department: currentUser.department || '' } : courses.find(x => x.id === dosenEditingCourse);
-            return `<div class="bg-white p-6 rounded-lg shadow"><h2 class="text-xl font-bold mb-4">${isNew ? 'Tambah Kelas' : 'Edit Kelas'}</h2>
-                    <input type="text" id="dc-title" value="${c.title}" class="w-full p-2 border rounded mb-3" placeholder="Nama Mata Kuliah">
-                    <button onclick="saveCourseForm('${isNew}')" class="bg-green-600 text-white px-4 py-2 rounded">Simpan</button>
-                    <button onclick="dosenEditingCourse=null; renderContent();" class="border px-4 py-2 rounded">Batal</button></div>`;
-        }
-        window.saveCourseForm = function(isNewStr) {
-            const title = document.getElementById('dc-title').value;
-            if(isNewStr === 'true') courses.push({ id: 'c' + Date.now(), title: title, lecturerId: currentUser.id, department: currentUser.department, enrolled: [], modules: [], quizzes: [], quizScores: {} });
-            else { const c = courses.find(x => x.id === dosenEditingCourse); if(c) c.title = title; }
-            dosenEditingCourse = null; renderContent();
-        };
-
-        // Modul/File
-        window.addModule = function() { selectedCourse.modules.push({ id: `m${Date.now()}`, title: 'Materi Baru', content: '' }); renderContent(); };
-        window.saveModule = function(mId) {
-            const mod = selectedCourse.modules.find(m => m.id === mId);
-            if(mod) { mod.title = document.getElementById('edit-mod-title').value; mod.content = document.getElementById('edit-mod-content').value; }
-            editingModule = null; renderContent();
-        };
-        window.deleteModule = function(mId) { selectedCourse.modules = selectedCourse.modules.filter(m => m.id !== mId); renderContent(); };
-
-        function updateAdminFormFields(role, userObj = {}) {
-            const container = document.getElementById('dynamic-fields');
-            if(!container) return;
-            const u = userObj.id ? userObj : (adminEditingUser !== 'NEW' ? users.find(x => x.id === adminEditingUser) : {});
-            if(role === 'mahasiswa') container.innerHTML = `<div><label class="text-sm">NIM (ID)</label><input type="text" id="au-nip" value="${u.nip||''}" class="w-full p-2 border rounded"></div><div><label class="text-sm">Jurusan</label><input type="text" id="au-dep" value="${u.major||''}" class="w-full p-2 border rounded"></div><div><label class="text-sm">Semester</label><input type="number" id="au-sem" value="${u.semester||''}" class="w-full p-2 border rounded"></div>`;
-            else if (role === 'dosen') container.innerHTML = `<div><label class="text-sm">NIP (ID)</label><input type="text" id="au-nip" value="${u.nip||''}" class="w-full p-2 border rounded"></div><div><label class="text-sm">Departemen</label><input type="text" id="au-dep" value="${u.department||''}" class="w-full p-2 border rounded"></div>`;
-            else container.innerHTML = '';
-        }
-
-        function initClock() {
-            clockInterval = setInterval(() => {
-                const el = document.getElementById('live-clock');
-                if(el) el.textContent = getFormattedTime();
-            }, 1000);
+                </div>`;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
