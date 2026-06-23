@@ -7,7 +7,7 @@
     <!-- Tailwind CSS & FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- SheetJS untuk Export/Import Excel Riil -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
@@ -21,7 +21,7 @@
         .progress-bar-fill { transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 h-screen overflow-hidden flex flex-col">
+<body class="bg-gray-50 text-gray-800 h-screen overflow-hidden flex flex-col relative">
 
     <div id="app-container" class="w-full h-full flex flex-col overflow-hidden">
         <!-- Konten utama di-render oleh JS -->
@@ -30,9 +30,9 @@
     <!-- Custom Dialog Modal Info -->
     <div id="alert-modal" class="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 fade-in hidden">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100">
-            <div class="flex items-center gap-3 text-green-700 mb-4">
+            <div class="flex items-center gap-3 text-green-750 mb-4">
                 <div class="p-2.5 bg-green-50 rounded-full">
-                    <i class="fas fa-info-circle text-lg"></i>
+                    <i class="fas fa-info-circle text-lg text-[#0e5c32]"></i>
                 </div>
                 <h3 id="alert-modal-title" class="font-bold text-lg text-gray-800">Informasi</h3>
             </div>
@@ -60,23 +60,73 @@
         </div>
     </div>
 
+    <!-- Floating Chat Widget -->
+    <div id="floating-chat-container" class="fixed bottom-5 right-5 z-[80] flex flex-col items-end">
+        <!-- Chat Notification Indicator Toast (Melayang) -->
+        <div id="chat-toast-notification" class="hidden bg-white border border-gray-150 p-4 rounded-2xl shadow-2xl mb-3 flex items-center gap-3 max-w-xs fade-in cursor-pointer" onclick="toggleChatDrawer(true)">
+            <div class="w-10 h-10 bg-green-100 text-[#0e5c32] font-black rounded-full flex items-center justify-center shrink-0" id="chat-toast-avatar">
+                U
+            </div>
+            <div class="min-w-0">
+                <p class="text-xs font-bold text-gray-900" id="chat-toast-sender">Pesan Baru</p>
+                <p class="text-[11px] text-gray-500 truncate" id="chat-toast-body">Isi pesan...</p>
+            </div>
+        </div>
+
+        <!-- Chat Toggle Button -->
+        <button onclick="toggleChatDrawer()" class="w-14 h-14 bg-[#0e5c32] hover:bg-green-800 text-white rounded-full flex items-center justify-center shadow-2xl transition duration-300 relative">
+            <i class="far fa-comments text-2xl" id="chat-icon-normal"></i>
+            <span id="chat-badge-count" class="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-white hidden">0</span>
+        </button>
+
+        <!-- Chat Drawer (Didesain sangat rapi & mewah) -->
+        <div id="chat-drawer" class="hidden w-80 md:w-96 bg-white rounded-2xl border border-gray-150 shadow-2xl mt-3 overflow-hidden flex flex-col h-[500px]">
+            <!-- Header -->
+            <div class="bg-[#0e5c32] text-white p-4 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-comments"></i>
+                    <h4 class="font-bold text-sm">STIPER Sriwigama Chat Room</h4>
+                </div>
+                <button onclick="toggleChatDrawer(false)" class="text-green-200 hover:text-white transition"><i class="fas fa-times"></i></button>
+            </div>
+            <!-- Main Content Area -->
+            <div class="flex-grow flex overflow-hidden">
+                <!-- User Contacts List -->
+                <div id="chat-contacts-list" class="w-1/3 border-r overflow-y-auto no-scrollbar bg-gray-50">
+                    <!-- Ditampilkan oleh JS -->
+                </div>
+                <!-- Chat Message Box -->
+                <div class="w-2/3 flex flex-col justify-between overflow-hidden bg-white">
+                    <div id="chat-recipient-header" class="p-3 border-b bg-gray-50 text-xs font-bold text-gray-700 truncate shrink-0">
+                        Pilih teman ngobrol...
+                    </div>
+                    <div id="chat-messages-box" class="flex-grow p-3 overflow-y-auto space-y-3 text-xs flex flex-col no-scrollbar">
+                        <div class="text-gray-400 italic text-center my-auto">Pilih salah satu kontak di samping untuk bertukar pesan.</div>
+                    </div>
+                    <form id="chat-input-form" class="p-2 border-t flex gap-1.5 shrink-0" onsubmit="sendChatMessage(event)">
+                        <input type="text" id="chat-message-input" placeholder="Tulis pesan..." class="flex-grow p-2 border rounded-lg text-xs outline-none focus:ring-1 focus:ring-green-500" disabled>
+                        <button type="submit" id="chat-send-btn" class="bg-[#0e5c32] text-white p-2 rounded-lg text-xs transition px-3 font-semibold" disabled><i class="fas fa-paper-plane"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // ==============================================================================
-        // 1. DATA STATE UTAMA (ID Pengguna disesuaikan dengan NIP/NIM)
-        // ==============================================================================
         let users = [
-            { id: '123456789', username: 'admin', password: 'password', role: 'admin', name: 'Administrator', nip: '123456789', email: 'admin@stiper.ac.id', phone: '081234567890', address: 'Kampus STIPER Sriwigama', gender: 'Laki-laki', firstAccess: 'Senin, 1 Juni 2026 08:00:00 WIB', lastAccess: 'Senin, 22 Juni 2026 15:16:45 WIB' },
-            { id: '198001012005011001', username: 'dosen1', password: 'password', role: 'dosen', name: 'Dr. Budi Santoso', department: 'Agribisnis', nip: '198001012005011001', email: 'budi.santoso@sriwigama.ac.id', phone: '081298765432', address: 'Jl. Merdeka No. 1, Palembang', gender: 'Laki-laki', firstAccess: 'Rabu, 3 Juni 2026 09:15:00 WIB', lastAccess: 'Senin, 22 Juni 2026 15:17:10 WIB' },
-            { id: '2021001', username: 'mhs1', password: 'password', role: 'mahasiswa', name: 'Andi Saputra', major: 'Agribisnis', semester: 3, nip: '2021001', email: 'andi@mhs.sriwigama.ac.id', phone: '085712345678', address: 'Jl. Mawar No. 3, Palembang', gender: 'Laki-laki', firstAccess: 'Senin, 8 Juni 2026 11:20:00 WIB', lastAccess: 'Senin, 22 Juni 2026 15:17:35 WIB' },
-            { id: '2021002', username: 'mhs2', password: 'password', role: 'mahasiswa', name: 'Siti Rahma', major: 'Agroteknologi', semester: 3, nip: '2021002', email: 'siti.rahma@mhs.sriwigama.ac.id', phone: '081298887766', address: 'Jl. Melati No. 10, Palembang', gender: 'Perempuan', firstAccess: 'Selasa, 9 Juni 2026 10:15:00 WIB', lastAccess: 'Senin, 22 Juni 2026 14:10:00 WIB' },
-            { id: '2021003', username: 'mhs3', password: 'password', role: 'mahasiswa', name: 'Rian Hidayat', major: 'Agroteknologi', semester: 1, nip: '2021003', email: 'rian@mhs.sriwigama.ac.id', phone: '089988776655', address: 'Jl. Kenanga No. 4, Palembang', gender: 'Laki-laki', firstAccess: 'Rabu, 10 Juni 2026 14:00:00 WIB', lastAccess: '-' }
+            { id: '123456789', username: 'admin', password: 'password', role: 'admin', name: 'Administrator', nip: '123456789', email: 'admin@stiper.ac.id', phone: '081234567890', address: 'Kampus STIPER Sriwigama', gender: 'Laki-laki', firstAccess: 'Senin, 1 Juni 2026 08:00:00 WIB', lastAccess: 'Senin, 22 Juni 2026 15:16:45 WIB', avatar: null },
+            { id: '198001012005011001', username: 'dosen1', password: 'password', role: 'dosen', name: 'Dr. Budi Santoso', department: 'Agronomi & Budidaya', nip: '198001012005011001', email: 'budi.santoso@sriwigama.ac.id', phone: '081298765432', address: 'Jl. Merdeka No. 1, Palembang', gender: 'Laki-laki', firstAccess: 'Rabu, 3 Juni 2026 09:15:00 WIB', lastAccess: 'Senin, 22 Juni 2026 15:17:10 WIB', avatar: null },
+            { id: '2021001', username: 'mhs1', password: 'password', role: 'mahasiswa', name: 'Andi Saputra', major: 'Agronomi & Budidaya', semester: 3, id: '2021001', email: 'andi@mhs.sriwigama.ac.id', phone: '085712345678', address: 'Jl. Mawar No. 3, Palembang', gender: 'Laki-laki', firstAccess: 'Senin, 8 Juni 2026 11:20:00 WIB', lastAccess: 'Senin, 22 Juni 2026 15:17:35 WIB', avatar: null },
+            { id: '2021002', username: 'mhs2', password: 'password', role: 'mahasiswa', name: 'Siti Rahma', major: 'Teknologi Pengolahan Lahan Basah', semester: 3, id: '2021002', email: 'siti.rahma@mhs.sriwigama.ac.id', phone: '081298887766', address: 'Jl. Melati No. 10, Palembang', gender: 'Perempuan', firstAccess: 'Selasa, 9 Juni 2026 10:15:00 WIB', lastAccess: 'Senin, 22 Juni 2026 14:10:00 WIB', avatar: null },
+            { id: '2021003', username: 'mhs3', password: 'password', role: 'mahasiswa', name: 'Rian Hidayat', major: 'Teknologi Pengolahan Lahan Basah', semester: 1, id: '2021003', email: 'rian@mhs.sriwigama.ac.id', phone: '089988776655', address: 'Jl. Kenanga No. 4, Palembang', gender: 'Laki-laki', firstAccess: 'Rabu, 10 Juni 2026 14:00:00 WIB', lastAccess: '-', avatar: null }
         ];
 
         let courses = [
             { 
-                id: 'c1', title: 'Pengantar Ilmu Pertanian', lecturerId: '198001012005011001', department: 'Agribisnis', enrolled: ['2021001', '2021002'], 
+                id: 'c1', title: 'Pengantar Ilmu Pertanian', lecturerId: '198001012005011001', department: 'Agronomi & Budidaya', enrolled: ['2021001', '2021002'], 
                 modules: [
-                    { id: 'm1', title: 'Modul 1: Sejarah Pertanian', content: 'Pertanian dimulai sejak zaman prasejarah ketika manusia mulai menetap dan bercocok tanam secara teratur. Perkembangan ini mengubah peradaban manusia dari pemburu pengumpul menjadi produsen pangan mandiri.', fileName: 'Modul_Sejarah.pdf', fileType: 'application/pdf', fileUrl: '#' }
+                    { id: 'm1', title: 'Modul Praktikum Pembenihan Jagung Hibrida', content: 'Panduan lengkap memilih varietas, pembibitan, dan pemupukan jagung untuk lahan sub-optimal.', fileName: 'Panduan_Pembenihan_Jagung_Hibrida.pdf', fileType: 'application/pdf', fileUrl: '#', fileSize: '4.8 MB', date: '15 Juni 2026', duration: '45 Menit' },
+                    { id: 'm2', title: 'Materi PPT Pengapuran Lahan Rawa Pasang Surut', content: 'Materi presentasi perkuliahan bab 3 tentang rekayasa pH tanah rawa dengan kalsit dan dolomit.', fileName: 'Bab_3_Pengapuran_Lahan_Rawa.pptx', fileType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', fileUrl: '#', fileSize: '12.5 MB', date: '10 Juni 2026', duration: '60 Menit' }
                 ],
                 quizzes: [
                     { id: 'q1', title: 'Kuis Evaluasi Modul 1', questions: [
@@ -86,12 +136,18 @@
                 quizScores: {} 
             },
             {
-                id: 'c2', title: 'Dasar-dasar Agronomi', lecturerId: '198001012005011001', department: 'Agroteknologi', enrolled: ['2021001'], modules: [], quizzes: [], quizScores: {}
+                id: 'c2', title: 'Dasar-dasar Agronomi', lecturerId: '198001012005011001', department: 'Teknologi Pengolahan Lahan Basah', enrolled: ['2021001'], modules: [], quizzes: [], quizScores: {}
             }
         ];
 
         let systemLogs = [
-            { time: 'Senin, 22 Juni 2026 pukul 15:16:45 WIB', role: 'admin', user: 'Administrator', action: 'Login ke sistem' }
+            { time: 'Selasa, 23 Juni 2026 pukul 18:00:00 WIB', role: 'admin', user: 'Administrator', action: 'Inisialisasi sistem log kampus' }
+        ];
+
+        // Chat Database (In-Memory)
+        let chatMessages = [
+            { senderId: '198001012005011001', receiverId: '2021001', text: 'Halo Andi, apakah kamu sudah membaca Modul Pembenihan Jagung?', time: '15:15' },
+            { senderId: '2021001', receiverId: '198001012005011001', text: 'Sore Pak, sudah saya baca sebagian. Menarik sekali metodenya.', time: '15:18' }
         ];
         
         let currentUser = null;
@@ -103,7 +159,6 @@
         let editingModule = null;
         let adminEditingUser = null; 
         let adminResettingUser = null;
-        let dosenEditingCourse = null; // Bisa berupa ID kelas atau 'NEW'
         let logFilterRole = 'all';
         let manageUserFilter = 'all';
         let clockInterval = null;
@@ -118,11 +173,12 @@
         let activeModuleUploadId = null; 
         let globalUploadProgress = 0;
 
+        // Chat State
+        let activeChatRecipientId = null;
+        let isChatDrawerOpen = false;
+
         const appContainer = document.getElementById('app-container');
 
-        // ==============================================================================
-        // 2. FUNGSI UTILITAS, NOTIFIKASI TOAST & DIALOG KUSTOM
-        // ==============================================================================
         function getFormattedTime() {
             const now = new Date();
             const weekday = now.toLocaleDateString('id-ID', { weekday: 'long' });
@@ -140,7 +196,6 @@
             systemLogs.unshift({ time: timeStr, role: userObj.role, user: userObj.name, action: action });
         }
 
-        // Notification Toast Kustom
         window.showNotification = function(msg, type='success') {
             const container = document.createElement('div');
             container.className = `fixed bottom-5 right-5 z-[9999] p-4 rounded-xl shadow-2xl border flex items-center gap-3 fade-in ${
@@ -158,7 +213,6 @@
             }, 3000);
         }
 
-        // Dialog Konfirmasi Modal Kustom
         window.showConfirmModal = function(message, onConfirm) {
             const modal = document.getElementById('confirm-modal');
             const msgEl = document.getElementById('confirm-modal-message');
@@ -178,7 +232,6 @@
             };
         }
 
-        // Dialog Alert Modal Kustom
         window.showAlertModal = function(message, title='Informasi') {
             const modal = document.getElementById('alert-modal');
             const titleEl = document.getElementById('alert-modal-title');
@@ -201,9 +254,6 @@
             }
         }
 
-        // ==============================================================================
-        // 3. HALAMAN LOGIN
-        // ==============================================================================
         function renderLogin() {
             appContainer.innerHTML = `
                 <div class="min-h-screen bg-[#f0fdf4] flex items-center justify-center p-4">
@@ -215,8 +265,6 @@
                             <h1 class="text-2xl font-black text-gray-800 text-center tracking-tight">STIPER SRIWIGAMA</h1>
                             <p class="text-gray-500 text-xs italic mt-0.5">Sistem Manajemen Pembelajaran & Akademik</p>
                         </div>
-                        
-                        <div id="login-error" class="hidden bg-red-100 text-red-600 p-3 rounded mb-4 text-sm text-center"></div>
                         
                         <form id="login-form" class="space-y-4">
                             <div class="relative">
@@ -238,7 +286,7 @@
                         <div class="mt-5 bg-blue-50 border border-blue-100 p-4 rounded-xl text-xs flex items-start gap-3">
                             <i class="fas fa-info-circle text-base text-blue-600 mt-0.5 shrink-0 animate-pulse"></i>
                             <span class="text-blue-900 leading-relaxed font-medium">
-                                Butuh bantuan akses? Silakan hubungi admin akademik atau pusat layanan kampus STIPER Sriwigama.
+                                Gunakan username bawaan (admin, dosen1, mhs1) dengan password "password" untuk menguji sistem dengan peran berbeda.
                             </span>
                         </div>
                     </div>
@@ -269,12 +317,16 @@
             e.className = p.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
         };
 
-        // ==============================================================================
-        // 4. KERANGKA UTAMA APLIKASI
-        // ==============================================================================
         function renderMainLayout() {
             const sidebarClass = isSidebarOpen ? 'w-64 md:relative absolute z-40' : 'w-0 md:w-20 overflow-hidden';
             const userRoleLabel = currentUser.role === 'admin' ? 'Administrator' : (currentUser.role === 'dosen' ? 'Dosen' : 'Mahasiswa');
+
+            // Set Avatar image or default
+            const userAvatarHtml = currentUser.avatar 
+                ? `<img src="${currentUser.avatar}" class="w-10 h-10 rounded-full object-cover border-2 border-green-500">`
+                : `<div class="w-10 h-10 bg-emerald-100 text-[#0e5c32] font-black rounded-full flex items-center justify-center text-xs border border-green-200">
+                     ${currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                   </div>`;
 
             appContainer.innerHTML = `
                 <nav class="bg-[#0e5c32] text-white h-16 shrink-0 flex items-center justify-between px-4 md:px-8 shadow-lg border-b border-[#083c20]">
@@ -290,11 +342,12 @@
                             <p class="text-sm font-bold leading-tight">${currentUser.name}</p>
                             <p class="text-[10px] text-green-300 uppercase font-semibold">${userRoleLabel}</p>
                         </div>
-                        <div class="relative">
+                        <div class="relative flex items-center gap-3">
+                            ${userAvatarHtml}
                             <button onclick="document.getElementById('drop').classList.toggle('hidden')" class="bg-[#094122] p-2 px-3 rounded-lg border border-[#166534] flex items-center space-x-2 transition hover:bg-[#07311a]">
-                                <i class="far fa-user text-sm"></i> <i class="fas fa-chevron-down text-[10px]"></i>
+                                <i class="fas fa-chevron-down text-[10px]"></i>
                             </button>
-                            <div id="drop" class="absolute right-0 mt-2 w-48 bg-white text-gray-800 rounded-lg shadow-xl border border-gray-100 hidden z-50 overflow-hidden">
+                            <div id="drop" class="absolute right-0 top-12 w-48 bg-white text-gray-800 rounded-lg shadow-xl border border-gray-100 hidden z-50 overflow-hidden">
                                 <button onclick="activeTab='profile'; document.getElementById('drop').classList.add('hidden'); render();" class="w-full text-left p-3 hover:bg-gray-50 flex items-center text-sm font-medium"><i class="far fa-user-circle mr-2 text-green-600"></i> Profil & Aktivitas</button>
                                 <hr class="border-gray-100">
                                 <button onclick="logout();" class="w-full text-left p-3 hover:bg-red-50 text-red-600 flex items-center text-sm font-semibold"><i class="fas fa-sign-out-alt mr-2 text-red-500"></i> Keluar</button>
@@ -325,6 +378,8 @@
             renderSideMenu();
             renderContent();
             startClock();
+            renderChatDrawerContacts();
+            updateUnreadChatBadge();
         }
 
         function renderSideMenu() {
@@ -341,7 +396,6 @@
 
             menu.innerHTML = items.map(i => {
                 const isActive = activeTab === i.id;
-                // Sidebar active styling is precise, modern, and flexible
                 const activeStyle = isActive 
                     ? 'bg-emerald-50 text-emerald-800 font-bold border-l-4 border-emerald-600 shadow-sm shadow-emerald-50/50' 
                     : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800 border-l-4 border-transparent';
@@ -367,9 +421,6 @@
             render();
         }
 
-        // ==============================================================================
-        // 5. ROUTER UTAMA
-        // ==============================================================================
         function renderContent() {
             const main = document.getElementById('main-content');
             if (activeTab === 'dashboard') {
@@ -396,18 +447,15 @@
             }
         }
 
-        // ==============================================================================
-        // 6. BERANDA (DASHBOARD)
-        // ==============================================================================
         function renderDashboard(container) {
             const totalMateri = courses.reduce((acc, curr) => acc + (curr.modules ? curr.modules.length : 0), 0);
 
             container.innerHTML = `
-                <div class="max-w-4xl fade-in">
+                <div class="max-w-6xl fade-in">
                     <h1 class="text-2xl font-black text-gray-800">Selamat Datang, <span class="text-[#0e5c32]">${currentUser.name}</span></h1>
-                    <p class="text-gray-500 mt-2 text-sm leading-relaxed">Portal Sistem Informasi Manajemen Akademik & E-Learning Sekolah Tinggi Ilmu Pertanian (STIPER) Sriwigama Palembang.</p>
+                    <p class="text-gray-500 mt-2 text-sm leading-relaxed">Portal E-Learning & Akademik Terintegrasi Sekolah Tinggi Ilmu Pertanian (STIPER) Sriwigama Palembang.</p>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
                             <div class="p-4 bg-purple-50 text-purple-600 rounded-xl"><i class="fas fa-users text-3xl"></i></div>
                             <div>
@@ -415,7 +463,6 @@
                                 <p class="text-2xl font-black text-gray-800">${users.length}</p>
                             </div>
                         </div>
-
                         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
                             <div class="p-4 bg-green-50 text-[#0e5c32] rounded-xl"><i class="fas fa-chalkboard-teacher text-3xl"></i></div>
                             <div>
@@ -423,7 +470,6 @@
                                 <p class="text-2xl font-black text-gray-800">${courses.length}</p>
                             </div>
                         </div>
-
                         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
                             <div class="p-4 bg-blue-50 text-blue-600 rounded-xl"><i class="fas fa-file-alt text-3xl"></i></div>
                             <div>
@@ -433,21 +479,92 @@
                         </div>
                     </div>
 
-                    <div class="bg-yellow-50 border border-yellow-100 p-6 rounded-2xl mt-8">
-                        <h4 class="font-bold text-yellow-800 flex items-center gap-2 text-sm"><i class="fas fa-bullhorn text-lg"></i> Petunjuk Pengoperasian Portal</h4>
-                        <p class="text-xs text-yellow-700 leading-relaxed mt-2">Dosen pengampu & Administrator dapat mengelola materi kuliah secara langsung di halaman detail mata kuliah. Mahasiswa dapat melihat daftar tugas, kuis aktif, mengunduh file, serta melihat rekap nilai pengerjaan kuis pada tab Laporan.</p>
+                    <!-- Layout Utama Kalender + Petunjuk -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+                        <!-- Kalender Widget -->
+                        <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2"><i class="far fa-calendar-alt text-[#0e5c32]"></i> Kalender Akademik Terintegrasi</h3>
+                                    <span class="text-xs font-semibold text-gray-500">Juni 2026</span>
+                                </div>
+                                <div class="grid grid-cols-7 gap-1 text-center text-xs font-bold text-gray-400 mb-2">
+                                    <span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
+                                </div>
+                                <div class="grid grid-cols-7 gap-2 text-center text-xs" id="dashboard-calendar-days">
+                                    <!-- Diisi oleh fungsi Javascript generator kalender -->
+                                </div>
+                            </div>
+                            <div class="mt-6 pt-4 border-t border-gray-100 text-[11px] text-gray-500 flex flex-col gap-2">
+                                <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-green-500 rounded-full inline-block"></span> <span>Tanggal Hari Ini (Kuliah Aktif)</span></div>
+                                <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-amber-500 rounded-full inline-block"></span> <span>Tanggal Rilis Berkas Materi Kuliah Baru</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Petunjuk & Agenda Hari Ini -->
+                        <div class="bg-yellow-50 border border-yellow-100 p-6 rounded-2xl flex flex-col justify-between">
+                            <div>
+                                <h4 class="font-bold text-yellow-800 flex items-center gap-2 text-sm"><i class="fas fa-bullhorn text-lg"></i> Agenda & Informasi Terkini</h4>
+                                <ul class="text-xs text-yellow-700 space-y-3 mt-4">
+                                    <li class="pb-2 border-b border-yellow-200/50"><strong>10 Juni:</strong> Rilis PPT Bab 3 Pengapuran Lahan Rawa</li>
+                                    <li class="pb-2 border-b border-yellow-200/50"><strong>15 Juni:</strong> Rilis Modul Praktikum Pembenihan Jagung Hibrida</li>
+                                    <li><strong>Hari Ini:</strong> Cek menu chat mengambang di pojok kanan bawah untuk konsultasi akademik secara langsung.</li>
+                                </ul>
+                            </div>
+                            <p class="text-[10px] text-yellow-600 italic mt-6">Kontak akademik & admin selalu siap memandu Anda melalui sistem obrolan terpadu.</p>
+                        </div>
                     </div>
                 </div>`;
+            
+            generateDashboardCalendar();
         }
 
-        // ==============================================================================
-        // 7. PROFIL AKUN & RIWAYAT AKTIVITAS
-        // ==============================================================================
+        // Generator Kalender Bulanan Juni 2026 (Sesuai Konteks Sistem Juni 2026)
+        function generateDashboardCalendar() {
+            const cal = document.getElementById('dashboard-calendar-days');
+            if(!cal) return;
+
+            // Juni 2026 dimulai dari hari Senin (index 1)
+            let html = '';
+            // Spacer untuk hari kosong sebelum tanggal 1
+            html += `<span></span>`; 
+
+            // Highlight tanggal khusus rilis materi
+            const rilisMateriDates = [10, 15];
+            const todayDate = 23; // Context: Juni 23, 2026
+
+            for(let d = 1; d <= 30; d++) {
+                let cellClass = "p-2 rounded-lg font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 transition cursor-pointer relative ";
+                
+                if(rilisMateriDates.includes(d)) {
+                    cellClass += "border-2 border-amber-500 bg-amber-50 text-amber-800";
+                } else if(d === todayDate) {
+                    cellClass += "bg-[#0e5c32] text-white border border-[#094122]";
+                }
+
+                let infoText = '';
+                if (d === 10) infoText = `onclick="showAlertModal('Rilis Berkas: Bab 3 Pengapuran Lahan Rawa (PPT)', 'Informasi Agenda 10 Juni')"`;
+                else if (d === 15) infoText = `onclick="showAlertModal('Rilis Berkas: Panduan Pembenihan Jagung Hibrida (PDF)', 'Informasi Agenda 15 Juni')"`;
+                else if (d === todayDate) infoText = `onclick="showAlertModal('Agenda Hari Ini: Perkuliahan Reguler Kampus Aktif', 'Hari Ini')"`;
+                else infoText = `onclick="showNotification('Tanggal ${d} Juni 2026 - Tidak ada agenda perkuliahan khusus.', 'success')"`;
+
+                html += `<span ${infoText} class="${cellClass}">${d}</span>`;
+            }
+
+            cal.innerHTML = html;
+        }
+
         function renderProfile(container) {
             const isAdmin = currentUser.role === 'admin';
             const idLabel = currentUser.role === 'mahasiswa' ? 'NIM' : (currentUser.role === 'dosen' ? 'NIP' : 'NIP / ID');
             const depLabel = currentUser.role === 'mahasiswa' ? 'Program Studi' : 'Departemen / Divisi';
             const depValue = currentUser.role === 'mahasiswa' ? (currentUser.major || '-') : (currentUser.department || 'Akademik');
+
+            const currentAvatarHtml = currentUser.avatar 
+                ? `<img id="profile-avatar-preview" src="${currentUser.avatar}" class="w-24 h-24 rounded-full object-cover border-4 border-green-200 shadow-md">`
+                : `<div id="profile-avatar-placeholder" class="w-24 h-24 bg-emerald-100 text-[#0e5c32] text-3xl font-black rounded-full flex items-center justify-center border-4 border-green-200 shadow-md">
+                     ${currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                   </div>`;
 
             container.innerHTML = `
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl fade-in">
@@ -455,32 +572,53 @@
                     <div class="lg:col-span-2 bg-white p-6 md:p-8 rounded-2xl border shadow-sm">
                         <h2 class="text-xl font-bold mb-6 flex items-center text-gray-800 border-b pb-3"><i class="far fa-user-circle text-green-700 mr-2 text-2xl"></i> Pengaturan Informasi Profil</h2>
                         
+                        <div class="bg-gray-50 p-4 rounded-xl mb-6 flex flex-col sm:flex-row items-center gap-4">
+                            <div class="shrink-0 relative">
+                                ${currentAvatarHtml}
+                            </div>
+                            <div class="text-center sm:text-left">
+                                <h4 class="font-bold text-sm text-gray-800">Ubah Foto Profil</h4>
+                                <p class="text-xs text-gray-500 mb-3">Unggah berkas foto berformat JPG/PNG dengan ukuran maksimal 1MB.</p>
+                                <label class="bg-[#0e5c32] hover:bg-green-800 text-white font-bold text-xs px-4 py-2 rounded-lg cursor-pointer transition shadow-sm inline-block">
+                                    <i class="fas fa-camera mr-1"></i> Pilih Foto
+                                    <input type="file" id="profile-picture-input" class="hidden" accept="image/png, image/jpeg, image/jpg" onchange="handleProfilePictureUpload(this)">
+                                </label>
+                            </div>
+                        </div>
+
                         <form id="profile-update-form" onsubmit="handleProfileUpdate(event)" class="space-y-4">
+                            <div class="bg-yellow-50 text-yellow-800 p-3 rounded-lg text-xs border border-yellow-200 flex items-start gap-2">
+                                <i class="fas fa-lock mt-0.5 shrink-0"></i>
+                                <span>Informasi utama profil (Username, Nama, ID, Program Studi/Departemen, Email) dikunci secara administratif dan tidak dapat diubah secara mandiri.</span>
+                            </div>
+
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <!-- ID Pengguna Sembunyi khusus Admin -->
-                                <div class="${isAdmin ? 'hidden' : ''}">
-                                    <label class="text-xs font-bold text-gray-400 block mb-1">ID / ${idLabel}</label>
-                                    <input type="text" value="${currentUser.id}" disabled class="w-full p-2.5 border rounded-lg bg-gray-50 text-gray-500 font-semibold cursor-not-allowed text-sm">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-400 block mb-1">USERNAME LOGIN</label>
+                                    <input type="text" value="${currentUser.username}" disabled class="w-full p-2.5 border rounded-lg bg-gray-100 text-gray-400 font-semibold cursor-not-allowed text-sm">
                                 </div>
                                 <div>
                                     <label class="text-xs font-bold text-gray-400 block mb-1">NAMA LENGKAP</label>
-                                    <input type="text" id="prof-name" value="${currentUser.name}" required class="w-full p-2.5 border rounded-lg focus:ring-1 focus:ring-green-500 outline-none border-gray-300 hover:border-gray-400 text-sm font-semibold">
+                                    <input type="text" value="${currentUser.name}" disabled class="w-full p-2.5 border rounded-lg bg-gray-100 text-gray-400 font-semibold cursor-not-allowed text-sm">
+                                </div>
+                                <div class="${isAdmin ? 'hidden' : ''}">
+                                    <label class="text-xs font-bold text-gray-400 block mb-1">ID / ${idLabel}</label>
+                                    <input type="text" value="${currentUser.id}" disabled class="w-full p-2.5 border rounded-lg bg-gray-100 text-gray-400 font-semibold cursor-not-allowed text-sm">
                                 </div>
                                 <div class="${isAdmin ? 'hidden' : ''}">
                                     <label class="text-xs font-bold text-gray-400 block mb-1">${depLabel}</label>
-                                    <input type="text" value="${depValue}" disabled class="w-full p-2.5 border rounded-lg bg-gray-50 text-gray-500 font-semibold cursor-not-allowed text-sm">
+                                    <input type="text" value="${depValue}" disabled class="w-full p-2.5 border rounded-lg bg-gray-100 text-gray-400 font-semibold cursor-not-allowed text-sm">
                                 </div>
-                                <div>
+                                <div class="col-span-full">
                                     <label class="text-xs font-bold text-gray-400 block mb-1">EMAIL AKADEMIK</label>
-                                    <input type="email" id="prof-email" value="${currentUser.email || ''}" required class="w-full p-2.5 border rounded-lg focus:ring-1 focus:ring-green-500 outline-none border-gray-300 hover:border-gray-400 text-sm">
+                                    <input type="email" value="${currentUser.email || ''}" disabled class="w-full p-2.5 border rounded-lg bg-gray-100 text-gray-400 font-semibold cursor-not-allowed text-sm">
                                 </div>
                                 <div>
-                                    <label class="text-xs font-bold text-gray-400 block mb-1">NOMOR TELEPON</label>
-                                    <input type="text" id="prof-phone" value="${currentUser.phone || ''}" class="w-full p-2.5 border rounded-lg focus:ring-1 focus:ring-green-500 outline-none border-gray-300 hover:border-gray-400 text-sm">
+                                    <label class="text-xs font-bold text-gray-400 block mb-1">NOMOR TELEPON (DAPAT DIUBAH)</label>
+                                    <input type="text" id="prof-phone" value="${currentUser.phone || ''}" required class="w-full p-2.5 border rounded-lg focus:ring-1 focus:ring-green-500 outline-none border-gray-300 hover:border-gray-400 text-sm">
                                 </div>
-                                <!-- Dropdown Gender Sembunyi khusus Admin -->
-                                <div class="${isAdmin ? 'hidden' : ''}">
-                                    <label class="text-xs font-bold text-gray-400 block mb-1">JENIS KELAMIN</label>
+                                <div>
+                                    <label class="text-xs font-bold text-gray-400 block mb-1">JENIS KELAMIN (DAPAT DIUBAH)</label>
                                     <select id="prof-gender" class="w-full p-2.5 border rounded-lg bg-white outline-none focus:ring-1 focus:ring-green-500 text-sm border-gray-300">
                                         <option value="Laki-laki" ${currentUser.gender === 'Laki-laki' ? 'selected' : ''}>Laki-laki</option>
                                         <option value="Perempuan" ${currentUser.gender === 'Perempuan' ? 'selected' : ''}>Perempuan</option>
@@ -489,8 +627,8 @@
                             </div>
                             
                             <div>
-                                <label class="text-xs font-bold text-gray-400 block mb-1">ALAMAT TINGGAL</label>
-                                <textarea id="prof-address" class="w-full p-2.5 border rounded-lg focus:ring-1 focus:ring-green-500 outline-none border-gray-300 hover:border-gray-400 text-sm h-16 resize-none">${currentUser.address || ''}</textarea>
+                                <label class="text-xs font-bold text-gray-400 block mb-1">ALAMAT TINGGAL (DAPAT DIUBAH)</label>
+                                <textarea id="prof-address" class="w-full p-2.5 border rounded-lg focus:ring-1 focus:ring-green-500 outline-none border-gray-300 hover:border-gray-400 text-sm h-16 resize-none" required>${currentUser.address || ''}</textarea>
                             </div>
 
                             <div class="border-t border-gray-100 pt-4">
@@ -511,7 +649,7 @@
                         </form>
                     </div>
 
-                    <!-- Kartu Informasi "Aktivitas Log Masuk" & Otentikasi Personal -->
+                    <!-- Kartu Informasi & Otentikasi Personal -->
                     <div class="bg-white p-6 rounded-2xl border shadow-sm flex flex-col justify-between">
                         <div>
                             <h3 class="text-lg font-bold text-gray-800 border-b pb-3 mb-4 flex items-center"><i class="fas fa-shield-alt mr-2 text-green-700"></i> Aktivitas Log Masuk</h3>
@@ -529,7 +667,7 @@
 
                         <!-- Otentikasi Personal hanya bisa dilihat oleh Admin -->
                         <div class="mt-6 ${isAdmin ? 'block' : 'hidden'}">
-                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"><i class="fas fa-history mr-1"></i> Otentikasi Personal (Admin Only)</h4>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"><i class="fas fa-history mr-1"></i> Riwayat Otentikasi Masuk Admin</h4>
                             <div class="overflow-x-auto rounded border no-scrollbar max-h-48 overflow-y-auto">
                                 <table class="w-full text-left text-[11px]">
                                     <tbody id="personal-login-tbody" class="divide-y divide-gray-100"></tbody>
@@ -541,21 +679,57 @@
             renderPersonalLogs();
         }
 
+        // Unggah Gambar Avatar & Validasi Ukuran < 1MB
+        function handleProfilePictureUpload(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const maxSize = 1 * 1024 * 1024; // 1 Megabyte
+
+                if (file.size > maxSize) {
+                    showNotification('Gagal mengunggah! Ukuran berkas gambar melebihi batas maksimal 1MB.', 'error');
+                    input.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64Data = e.target.result;
+                    currentUser.avatar = base64Data;
+                    
+                    // Update user di list utama
+                    const idx = users.findIndex(u => u.id === currentUser.id);
+                    if (idx !== -1) users[idx].avatar = base64Data;
+
+                    // Ganti di pratinjau langsung
+                    const preview = document.getElementById('profile-avatar-preview');
+                    const placeholder = document.getElementById('profile-avatar-placeholder');
+                    
+                    if (preview) {
+                        preview.src = base64Data;
+                    } else if (placeholder) {
+                        const newImg = document.createElement('img');
+                        newImg.id = 'profile-avatar-preview';
+                        newImg.src = base64Data;
+                        newImg.className = "w-24 h-24 rounded-full object-cover border-4 border-green-200 shadow-md";
+                        placeholder.parentNode.replaceChild(newImg, placeholder);
+                    }
+
+                    showNotification('Foto profil berhasil diperbarui! Perubahan akan langsung terlihat.', 'success');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
         window.handleProfileUpdate = function(e) {
             e.preventDefault();
-            const email = document.getElementById('prof-email').value;
             const phone = document.getElementById('prof-phone').value;
             const address = document.getElementById('prof-address').value;
+            const gender = document.getElementById('prof-gender').value;
             const pass = document.getElementById('prof-password').value;
 
-            currentUser.email = email;
             currentUser.phone = phone;
             currentUser.address = address;
-            currentUser.name = document.getElementById('prof-name').value;
-
-            if (currentUser.role !== 'admin') {
-                currentUser.gender = document.getElementById('prof-gender').value;
-            }
+            currentUser.gender = gender;
 
             if(pass.trim() !== '') {
                 currentUser.password = pass;
@@ -587,9 +761,6 @@
                 </tr>`).join('');
         }
 
-        // ==============================================================================
-        // 8. LISTING KELAS & MATERI
-        // ==============================================================================
         function renderCourseList(container) {
             const isDosen = currentUser.role === 'dosen';
             const isAdmin = currentUser.role === 'admin';
@@ -666,7 +837,6 @@
             });
         }
 
-        // Modern Visual popup modal untuk Tambah / Edit Kelas
         window.triggerCreateCourse = function() {
             renderCourseCrudModal('NEW');
         }
@@ -678,9 +848,8 @@
         function renderCourseCrudModal(mode) {
             const modal = document.getElementById('modal-course-crud');
             const isNew = mode === 'NEW';
-            const course = isNew ? { title: '', department: currentUser.department || 'Agribisnis', lecturerId: currentUser.id } : courses.find(c => c.id === mode);
+            const course = isNew ? { title: '', department: currentUser.department || 'Agronomi & Budidaya', lecturerId: currentUser.id } : courses.find(c => c.id === mode);
             
-            // Build Dosen Selector (Khusus Admin bisa merubah dosen pengampu)
             let lecturerSelection = '';
             if (currentUser.role === 'admin') {
                 const lecturers = users.filter(u => u.role === 'dosen');
@@ -709,8 +878,8 @@
                         <div>
                             <label class="block text-xs font-bold text-gray-500 mb-1">PROGRAM STUDI / JURUSAN</label>
                             <select id="modal-c-dept" class="w-full p-2.5 border rounded-lg bg-white text-sm outline-none focus:ring-1 focus:ring-green-500">
-                                <option value="Agribisnis" ${course.department === 'Agribisnis' ? 'selected' : ''}>Agribisnis</option>
-                                <option value="Agroteknologi" ${course.department === 'Agroteknologi' ? 'selected' : ''}>Agroteknologi</option>
+                                <option value="Agronomi & Budidaya" ${course.department === 'Agronomi & Budidaya' ? 'selected' : ''}>Agronomi & Budidaya</option>
+                                <option value="Teknologi Pengolahan Lahan Basah" ${course.department === 'Teknologi Pengolahan Lahan Basah' ? 'selected' : ''}>Teknologi Pengolahan Lahan Basah</option>
                             </select>
                         </div>
                         ${lecturerSelection}
@@ -761,323 +930,6 @@
             render();
         }
 
-        // ==============================================================================
-        // 9. MANAJEMEN PENGGUNA (ADMIN ONLY)
-        // ==============================================================================
-        function renderManageUsers(container) {
-            let filteredUsers = users.filter(u => manageUserFilter === 'all' || u.role === manageUserFilter);
-
-            let html = `
-                <div class="bg-white rounded-2xl shadow-sm border p-4 md:p-6 w-full overflow-hidden fade-in">
-                    <div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4 border-b pb-4">
-                        <h2 class="text-xl md:text-2xl font-bold text-gray-800 flex items-center"><i class="fas fa-users-cog text-green-700 mr-2"></i> Kelola Pengguna</h2>
-                        <div class="flex flex-wrap gap-2">
-                            <label class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-sm flex items-center cursor-pointer transition">
-                                <i class="fas fa-file-import mr-2"></i> Import Data (Excel)
-                                <input type="file" class="hidden" accept=".xlsx, .xls, .csv" onchange="handleExcelImport(this)">
-                            </label>
-                            
-                            <button onclick="exportUsersToExcel()" class="bg-[#0e5c32] hover:bg-green-800 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-sm flex items-center transition">
-                                <i class="fas fa-file-excel mr-2"></i> Export Data (Excel)
-                            </button>
-
-                            <button onclick="adminEditingUser='NEW'; render();" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-sm flex items-center transition">
-                                <i class="fas fa-user-plus mr-2"></i> Tambah Baru
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-red-50 border border-red-100 p-5 rounded-2xl mb-6">
-                        <h3 class="text-sm font-bold text-red-700 mb-3 flex items-center gap-1.5"><i class="fas fa-exclamation-triangle"></i> Menu Penghapusan Massal Pengguna</h3>
-                        <div class="flex flex-wrap gap-3 items-center">
-                            <select id="md-role-select" class="border p-2.5 rounded-lg text-sm bg-white focus:ring-1 focus:ring-red-500 outline-none">
-                                <option value="">-- Pilih Peran / Role --</option>
-                                <option value="mahasiswa">Mahasiswa</option>
-                                <option value="dosen">Dosen</option>
-                            </select>
-                            <input type="text" id="md-major-input" placeholder="Jurusan / Program Studi" class="border p-2.5 rounded-lg text-sm bg-white focus:ring-1 focus:ring-red-500 outline-none">
-                            <input type="number" id="md-semester-input" placeholder="Semester" class="border p-2.5 rounded-lg text-sm bg-white w-28 focus:ring-1 focus:ring-red-500 outline-none">
-                            
-                            <button onclick="executeAdminMassDelete()" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition">
-                                <i class="fas fa-trash-alt mr-1.5"></i> Hapus Massal
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="mb-5 flex items-center gap-3">
-                        <span class="text-sm font-bold text-gray-500">Saring Berdasarkan Peran:</span>
-                        <select onchange="manageUserFilter=this.value; render();" class="border p-2.5 rounded-xl text-sm bg-white shadow-sm focus:ring-1 focus:ring-green-500 outline-none">
-                            <option value="all" ${manageUserFilter==='all'?'selected':''}>Semua Role</option>
-                            <option value="admin" ${manageUserFilter==='admin'?'selected':''}>Admin</option>
-                            <option value="dosen" ${manageUserFilter==='dosen'?'selected':''}>Dosen</option>
-                            <option value="mahasiswa" ${manageUserFilter==='mahasiswa'?'selected':''}>Mahasiswa</option>
-                        </select>
-                    </div>`;
-
-            if (adminEditingUser) {
-                const isNew = adminEditingUser === 'NEW';
-                const u = isNew ? { role: 'mahasiswa', name: '', username: '' } : users.find(x => x.id === adminEditingUser);
-                
-                html += `
-                    <div class="bg-gray-50 p-4 md:p-6 rounded-lg border mb-6 shadow-sm border-l-4 border-purple-500">
-                        <h3 class="text-lg font-bold mb-4">${isNew ? 'Tambah Pengguna Baru' : 'Edit Data: ' + u.name}</h3>
-                        <form id="admin-user-form" onsubmit="handleAdminSaveUser(event, '${isNew}')" class="space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div><label class="text-sm font-medium">Peran</label>
-                                    <select id="au-role" class="w-full p-2.5 border rounded-lg bg-white outline-none focus:ring-1 focus:ring-green-500 animate" onchange="updateAdminFormFields(this.value)">
-                                        <option value="mahasiswa" ${u.role==='mahasiswa'?'selected':''}>Mahasiswa</option>
-                                        <option value="dosen" ${u.role==='dosen'?'selected':''}>Dosen</option>
-                                        <option value="admin" ${u.role==='admin'?'selected':''}>Administrator</option>
-                                    </select>
-                                </div>
-                                <div><label class="text-sm font-medium">Nama Lengkap</label><input type="text" id="au-name" value="${u.name}" required class="w-full p-2.5 border rounded-lg outline-none"></div>
-                                <div><label class="text-sm font-medium">ID Pengguna (NIP/NIM)</label><input type="text" id="au-id" value="${u.id}" ${!isNew ? 'disabled bg-gray-100 cursor-not-allowed text-gray-400' : ''} required class="w-full p-2.5 border rounded-lg outline-none"></div>
-                                <div><label class="text-sm font-medium">Username Login</label><input type="text" id="au-user" value="${u.username}" ${!isNew ? 'disabled bg-gray-100 cursor-not-allowed text-gray-400' : ''} required class="w-full p-2.5 border rounded-lg outline-none"></div>
-                                ${isNew ? `
-                                <div><label class="text-sm font-medium">Kata Sandi Awal</label><input type="text" id="au-pass" value="password123" class="w-full p-2.5 border rounded-lg bg-gray-100 outline-none" readonly></div>` : ''}
-                            </div>
-                            <div id="dynamic-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t"></div>
-                            <div class="flex gap-2 pt-4">
-                                <button type="submit" class="bg-green-600 text-white font-bold px-6 py-2.5 rounded-lg shadow-sm hover:bg-green-700 transition">Simpan Pengguna</button>
-                                <button type="button" onclick="adminEditingUser=null; render();" class="border font-semibold px-6 py-2.5 rounded-lg bg-white hover:bg-gray-50 transition">Batal</button>
-                            </div>
-                        </form>
-                    </div>`;
-                setTimeout(() => updateAdminFormFields(u.role, u), 50);
-            } 
-            else if (adminResettingUser) {
-                const u = users.find(x => x.id === adminResettingUser);
-                html += `
-                    <div class="bg-orange-50 p-6 rounded-2xl border mb-6 shadow-sm border-l-4 border-orange-500">
-                        <h3 class="text-lg font-bold mb-4 text-orange-800"><i class="fas fa-key mr-2"></i> Reset Sandi: ${u.name}</h3>
-                        <form id="admin-reset-form" onsubmit="handleAdminResetSubmit(event)" class="space-y-4">
-                            <div><label class="text-xs font-bold text-gray-700 block mb-1">Kata Sandi Baru</label><input type="text" id="ar-pass" value="password123" required class="w-full md:w-1/2 p-2.5 border rounded-lg outline-none"></div>
-                            <div class="bg-white p-4 border border-orange-200 rounded-xl">
-                                <label class="text-xs font-bold text-gray-800 block mb-2"><i class="fas fa-file-upload mr-1 text-orange-600"></i> Unggah Formulir Fisik Bukti Permintaan (Wajib)</label>
-                                <input type="file" id="ar-file" accept="image/*,.pdf" class="w-full text-xs text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700" required>
-                                <p class="text-[10px] text-gray-400 mt-1">Bukti fisik ini akan terekam secara permanen di basis data demi kelengkapan log keamanan sistem.</p>
-                            </div>
-                            <div class="flex gap-2 pt-2">
-                                <button type="submit" class="bg-orange-600 text-white font-bold px-6 py-2.5 rounded-lg shadow-sm hover:bg-orange-700 transition">Konfirmasi & Reset</button>
-                                <button type="button" onclick="adminResettingUser=null; render();" class="border font-semibold px-6 py-2.5 rounded-lg bg-white hover:bg-gray-50 transition">Batal</button>
-                            </div>
-                        </form>
-                    </div>`;
-            }
-            else {
-                html += `
-                    <div class="overflow-x-auto rounded-xl border no-scrollbar">
-                        <table class="min-w-full text-left border-collapse bg-white whitespace-nowrap">
-                            <thead>
-                                <tr class="bg-gray-100 border-b">
-                                    <th class="p-3 text-sm font-semibold">ID Pengguna (NIP/NIM)</th>
-                                    <th class="p-3 text-sm font-semibold">Nama Pengguna</th>
-                                    <th class="p-3 text-sm font-semibold">Peran/Role Pengguna</th>
-                                    <th class="p-3 text-sm font-semibold">Info</th>
-                                    <th class="p-3 text-sm font-semibold text-center">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${filteredUsers.map(u => {
-                                    let proofBtn = u.resetFormUrl ? `<button onclick="window.open('${u.resetFormUrl}', '_blank')" class="text-orange-600 bg-orange-50 hover:bg-orange-100 p-2 rounded mx-1 text-xs" title="Bukti Reset"><i class="fas fa-file-contract mr-1"></i> Bukti</button>` : '';
-                                    return `
-                                    <tr class="border-b hover:bg-gray-50 transition-colors">
-                                        <td class="p-3 text-sm font-semibold text-gray-700">${u.id}</td>
-                                        <td class="p-3 text-sm font-medium">
-                                            <div class="leading-tight">
-                                                <p class="text-gray-800">${u.name}</p>
-                                                <p class="text-xs text-gray-400 font-normal">@${u.username}</p>
-                                            </div>
-                                        </td>
-                                        <td class="p-3 text-sm"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${u.role === 'admin' ? 'bg-red-100 text-red-700' : (u.role === 'dosen' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700')}">${u.role.toUpperCase()}</span></td>
-                                        <td class="p-3 text-sm text-gray-600">${u.role === 'mahasiswa' ? `Smt: ${u.semester || '-'} &bull; ${u.major || '-'}` : (u.role === 'dosen' ? u.department || '-' : '-')}</td>
-                                        <td class="p-3 text-sm text-center font-bold">
-                                            <button onclick="adminEditingUser='${u.id}'; render();" class="text-indigo-600 bg-indigo-50 p-2 rounded-lg mx-1 hover:bg-indigo-100 transition" title="Edit Data Pengguna"><i class="fas fa-edit"></i></button>
-                                            <button onclick="adminResettingUser='${u.id}'; render();" class="text-orange-600 bg-orange-50 p-2 rounded-lg mx-1 hover:bg-orange-100 transition" title="Reset Password"><i class="fas fa-key"></i></button>
-                                            <button onclick="handleAdminDeleteUser('${u.id}')" class="text-red-600 bg-red-50 p-2 rounded-lg mx-1 hover:bg-red-100 transition" title="Hapus Pengguna" ${u.id === currentUser.id ? 'disabled opacity-50 cursor-not-allowed' : ''}><i class="fas fa-trash"></i></button>
-                                            ${proofBtn}
-                                        </td>
-                                    </tr>`;
-                                }).join('')}
-                                ${filteredUsers.length === 0 ? '<tr><td colspan="5" class="p-4 text-center text-gray-500">Data tidak ditemukan.</td></tr>' : ''}
-                            </tbody>
-                        </table>
-                    </div>`;
-            }
-            
-            html += '</div>';
-            container.innerHTML = html;
-        }
-
-        window.updateAdminFormFields = function(role, userObj = {}) {
-            const container = document.getElementById('dynamic-fields');
-            if(!container) return;
-            const u = userObj.id ? userObj : (adminEditingUser !== 'NEW' ? users.find(x => x.id === adminEditingUser) : {});
-            
-            if(role === 'mahasiswa') {
-                container.innerHTML = `
-                    <div><label class="text-xs font-bold text-gray-500">Program Studi / Jurusan</label><input type="text" id="au-dep" value="${u.major||''}" required class="w-full p-2.5 border rounded-lg outline-none focus:ring-1 focus:ring-green-500"></div>
-                    <div><label class="text-xs font-bold text-gray-500">Semester Aktif</label><input type="number" id="au-sem" value="${u.semester||''}" required class="w-full p-2.5 border rounded-lg outline-none focus:ring-1 focus:ring-green-500"></div>`;
-            } else if (role === 'dosen') {
-                container.innerHTML = `
-                    <div><label class="text-xs font-bold text-gray-500">Departemen / Jabatan</label><input type="text" id="au-dep" value="${u.department||''}" required class="w-full p-2.5 border rounded-lg outline-none focus:ring-1 focus:ring-green-500"></div>`;
-            } else {
-                container.innerHTML = '';
-            }
-        }
-
-        window.handleAdminSaveUser = function(e, isNewStr) {
-            e.preventDefault();
-            const isNew = isNewStr === 'true';
-            const role = document.getElementById('au-role').value;
-            const name = document.getElementById('au-name').value;
-            const idVal = document.getElementById('au-id').value.trim();
-            const usernameVal = document.getElementById('au-user').value.trim();
-
-            if (isNew) {
-                if(users.some(x => x.id === idVal)) {
-                    showNotification('ID Pengguna (NIP/NIM) sudah digunakan!', 'error');
-                    return;
-                }
-                if(users.some(x => x.username === usernameVal)) {
-                    showNotification('Username sudah digunakan!', 'error');
-                    return;
-                }
-            }
-
-            let targetUser;
-            if (isNew) {
-                targetUser = { id: idVal, username: usernameVal, password: 'password123', role: role, name: name, firstAccess: getFormattedTime(), lastAccess: '-' };
-                users.push(targetUser);
-            } else {
-                targetUser = users.find(u => u.id === adminEditingUser);
-                targetUser.name = name;
-                targetUser.role = role;
-            }
-
-            if(role === 'mahasiswa') {
-                targetUser.major = document.getElementById('au-dep').value;
-                targetUser.semester = parseInt(document.getElementById('au-sem').value);
-                delete targetUser.department;
-            } else if (role === 'dosen') {
-                targetUser.department = document.getElementById('au-dep').value;
-                delete targetUser.major;
-                delete targetUser.semester;
-            }
-
-            adminEditingUser = null;
-            showNotification(isNew ? 'Pengguna baru berhasil ditambahkan!' : 'Data pengguna berhasil diperbarui!', 'success');
-            render();
-        }
-
-        window.handleAdminDeleteUser = function(idVal) {
-            if(idVal === currentUser.id) return;
-            showConfirmModal('Apakah Anda yakin ingin menghapus pengguna ini secara permanen dari sistem E-LMS?', () => {
-                users = users.filter(u => u.id !== idVal);
-                showNotification('Pengguna berhasil dihapus.', 'success');
-                render();
-            });
-        }
-
-        window.handleAdminResetSubmit = function(e) {
-            e.preventDefault();
-            const newPass = document.getElementById('ar-pass').value;
-            const fileInput = document.getElementById('ar-file');
-
-            if(fileInput.files.length === 0) {
-                showNotification('Formulir bukti fisik pengajuan wajib diunggah!', 'error');
-                return;
-            }
-
-            const targetUser = users.find(u => u.id === adminResettingUser);
-            if(targetUser) {
-                targetUser.password = newPass;
-                targetUser.resetFormUrl = URL.createObjectURL(fileInput.files[0]);
-                targetUser.resetFormName = fileInput.files[0].name;
-                addLog(`Reset sandi akun: ${targetUser.name}`, currentUser);
-                showNotification('Sandi berhasil direset dan bukti tersimpan!', 'success');
-            }
-
-            adminResettingUser = null;
-            render();
-        }
-
-        window.executeAdminMassDelete = function() {
-            const role = document.getElementById('md-role-select').value;
-            const major = document.getElementById('md-major-input').value.trim();
-            const semester = document.getElementById('md-semester-input').value.trim();
-
-            if(!role && !major && !semester) {
-                showNotification('Pilih kriteria untuk melakukan penghapusan massal!', 'error');
-                return;
-            }
-
-            let msg = 'Apakah Anda yakin ingin menghapus secara massal pengguna yang cocok dengan kriteria berikut?<br>';
-            if(role) msg += `&bull; Peran: <strong>${role}</strong><br>`;
-            if(major) msg += `&bull; Jurusan/Program Studi: <strong>${major}</strong><br>`;
-            if(semester) msg += `&bull; Semester: <strong>${semester}</strong>`;
-
-            showConfirmModal(msg, () => {
-                const initLen = users.length;
-                users = users.filter(u => {
-                    if (u.id === currentUser.id) return true;
-
-                    let match = true;
-                    if (role && u.role !== role) match = false;
-                    if (major && u.major !== major && u.department !== major) match = false;
-                    if (semester && String(u.semester) !== semester) match = false;
-
-                    return !match;
-                });
-
-                const deletedCount = initLen - users.length;
-                showNotification(`Berhasil menghapus ${deletedCount} pengguna secara massal!`, 'success');
-                render();
-            });
-        }
-
-        window.exportUsersToExcel = function() {
-            if (typeof XLSX !== 'undefined') {
-                const data = users.map(u => ({
-                    'ID Pengguna / NIP / NIM': u.id,
-                    'Username': u.username,
-                    'Peran / Role': u.role.toUpperCase(),
-                    'Nama Lengkap': u.name,
-                    'Email Akademik': u.email || '-',
-                    'Nomor Telepon': u.phone || '-',
-                    'Semester': u.semester || '-',
-                    'Jurusan / Program Studi': u.major || u.department || '-'
-                }));
-
-                const ws = XLSX.utils.json_to_sheet(data);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Pengguna E-LMS");
-                XLSX.writeFile(wb, "Data_Pengguna_STIPER.xlsx");
-                showNotification('Data pengguna berhasil diekspor ke Excel!', 'success');
-            } else {
-                showNotification('Library ekspor gagal dimuat!', 'error');
-            }
-        }
-
-        window.handleExcelImport = function(input) {
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                input.value = '';
-                showNotification(`Mengimpor "${file.name}"...`, 'success');
-                setTimeout(() => {
-                    users.push(
-                        { id: '2021004', username: 'mhs4', password: 'password', role: 'mahasiswa', name: 'Rian Hidayat', major: 'Agroteknologi', semester: 3, email: 'rian@mhs.sriwigama.ac.id', firstAccess: getFormattedTime(), lastAccess: '-' },
-                        { id: '198203032009012002', username: 'dosen3', password: 'password', role: 'dosen', name: 'Suhartono, M.P.', department: 'Agroteknologi', email: 'suhartono@sriwigama.ac.id', firstAccess: getFormattedTime(), lastAccess: '-' }
-                    );
-                    showNotification('Import massal selesai! 2 pengguna baru berhasil ditambahkan.', 'success');
-                    render();
-                }, 1000);
-            }
-        }
-
-        // ==============================================================================
-        // 10. DETAIL KELAS - MODUL MATERI, KUIS & PESERTA KELAS
-        // ==============================================================================
         function renderCourseDetail(container) {
             if (activeQuizEditId) {
                 renderQuizEditor(container);
@@ -1093,33 +945,34 @@
             const canManage = isDosen || isAdmin;
 
             let addModBtn = canManage ? `
-                <div class="flex flex-wrap gap-2">
-                    <button onclick="addModule()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm shadow-sm transition flex items-center gap-1 font-semibold">
-                        <i class="fas fa-plus"></i> Tambah Materi
+                <div class="flex flex-wrap gap-2 shrink-0">
+                    <button onclick="addModule()" class="bg-[#0e5c32] hover:bg-green-800 text-white px-5 py-3 rounded-xl shadow-sm text-xs sm:text-sm font-bold transition flex items-center gap-1.5">
+                        <i class="fas fa-plus"></i> Tambah Teks
                     </button>
-                    <label class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm shadow-sm transition cursor-pointer flex items-center gap-1 font-semibold">
-                        <i class="fas fa-cloud-upload-alt"></i> Upload File
+                    <label class="bg-[#0e5c32] hover:bg-green-800 text-white px-5 py-3 rounded-xl shadow-sm text-xs sm:text-sm font-bold transition cursor-pointer flex items-center gap-1.5">
+                        <i class="fas fa-plus"></i> Upload File Baru
                         <input type="file" id="direct-file-upload" class="hidden" accept=".docx,.doc,.ppt,.pptx,.xls,.xlsx,.pdf,image/*,video/*" onchange="handleDirectFileUpload(this)">
                     </label>
                 </div>` : '';
 
             let html = `
-                <button onclick="selectedCourse=null; render();" class="mb-4 text-sm font-bold text-green-600 flex items-center hover:bg-green-50 w-fit p-2 rounded-lg transition"><i class="fas fa-arrow-left mr-2"></i> KEMBALI</button>
-                <div class="bg-white rounded-2xl border p-6 mb-8 shadow-sm">
-                    <span class="bg-emerald-100 text-emerald-800 font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-md">${selectedCourse.department}</span>
-                    <h1 class="text-2xl font-black text-gray-800 uppercase tracking-tight mt-2">${selectedCourse.title}</h1>
-                    <p class="text-gray-500 text-xs mt-1"><i class="far fa-user-circle mr-1"></i> Dosen Pengampu: ${users.find(u => u.id === selectedCourse.lecturerId)?.name || 'Unknown'}</p>
-                </div>
+                <button onclick="selectedCourse=null; render();" class="mb-5 text-sm font-bold text-green-700 flex items-center hover:bg-green-50 w-fit p-2.5 rounded-xl transition"><i class="fas fa-arrow-left mr-2"></i> KEMBALI KE DAFTAR KELAS</button>
                 
-                <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
-                    <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-book-open mr-2 text-green-600"></i> Materi Pembelajaran</h3>
+                <!-- Materi Kuliah & Modul Ajar Header Card -->
+                <div class="bg-white rounded-2xl border border-gray-150 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 shadow-sm">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Materi Kuliah & Modul Ajar</h2>
+                        <p class="text-sm text-gray-500 mt-1">Akses dan bagikan materi pembelajaran pertanian terintegrasi di kelas ${selectedCourse.title}.</p>
+                    </div>
                     ${addModBtn}
                 </div>
-                <div class="space-y-4 mb-8">`;
+                
+                <!-- Grid Modul 2-Kolom -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">`;
             
             if (uploadProgress) {
                 html += `
-                    <div class="bg-white rounded-lg border shadow-sm p-5 border-l-4 border-blue-500 animate-pulse">
+                    <div class="col-span-full bg-white rounded-2xl border shadow-sm p-6 border-l-4 border-blue-500 animate-pulse">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-sm font-semibold text-gray-700"><i class="fas fa-spinner fa-spin mr-2"></i> Mengunggah ${uploadProgress.fileName} dari device...</span>
                             <span class="text-xs font-bold text-blue-600">${uploadProgress.percent}%</span>
@@ -1131,7 +984,7 @@
             }
 
             if ((!selectedCourse.modules || selectedCourse.modules.length === 0) && !uploadProgress) {
-                html += `<div class="bg-white rounded border p-8 text-center text-gray-500 border-dashed border-2">Belum ada materi pembelajaran yang diterbitkan.</div>`;
+                html += `<div class="col-span-full bg-white rounded-2xl border p-12 text-center text-gray-400 border-dashed border-2">Belum ada materi pembelajaran yang diterbitkan.</div>`;
             } else {
                 selectedCourse.modules.forEach(mod => {
                     html += renderModuleCard(mod, canManage);
@@ -1140,11 +993,11 @@
             html += `</div>`;
 
             // Bagian Kuis Evaluasi
-            let addQuizBtn = canManage ? `<button onclick="createNewQuiz()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm shadow-sm transition"><i class="fas fa-plus mr-1"></i> Buat Kuis Baru</button>` : '';
-            html += `<div class="flex flex-wrap justify-between items-center mb-4 gap-2"><h3 class="text-xl font-bold text-gray-800"><i class="fas fa-tasks mr-2 text-purple-600"></i> Evaluasi & Kuis</h3>${addQuizBtn}</div><div class="space-y-4 mb-8">`;
+            let addQuizBtn = canManage ? `<button onclick="createNewQuiz()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition"><i class="fas fa-plus mr-1"></i> Buat Kuis Baru</button>` : '';
+            html += `<div class="flex flex-wrap justify-between items-center mb-4 gap-2"><h3 class="text-xl font-black text-gray-800"><i class="fas fa-tasks mr-2 text-purple-600"></i> Evaluasi & Kuis</h3>${addQuizBtn}</div><div class="space-y-4 mb-8">`;
 
             if (!selectedCourse.quizzes || selectedCourse.quizzes.length === 0) {
-                html += `<div class="bg-white rounded border p-8 text-center text-gray-500 border-dashed border-2">Belum ada kuis/ujian tersedia.</div>`;
+                html += `<div class="bg-white rounded-2xl border p-8 text-center text-gray-400 border-dashed border-2 text-sm font-medium">Belum ada kuis/ujian tersedia.</div>`;
             } else {
                 selectedCourse.quizzes.forEach(quiz => {
                     let score = (selectedCourse.quizScores && selectedCourse.quizScores[quiz.id] && selectedCourse.quizScores[quiz.id][currentUser.id] !== undefined) 
@@ -1165,7 +1018,7 @@
                     }
 
                     html += `
-                        <div class="bg-white rounded-lg border shadow-sm p-4 flex justify-between items-center">
+                        <div class="bg-white rounded-2xl border shadow-sm p-4 flex justify-between items-center">
                             <div><h4 class="font-bold text-gray-800">${quiz.title}</h4><p class="text-xs text-gray-500">${quiz.questions.length} Pertanyaan Pilihan Ganda</p></div>
                             <div class="flex items-center gap-2">${qActions}</div>
                         </div>`;
@@ -1173,23 +1026,22 @@
             }
             html += `</div>`;
 
-            // BAGIAN BARU: TAMPILKAN PESERTA YANG MENGIKUTI KELAS (Peserta Roster & Kelola Mahasiswa)
+            // Bagian Peserta Kelas
             const enrolledStudents = users.filter(u => selectedCourse.enrolled.includes(u.id));
             const availableStudents = users.filter(u => u.role === 'mahasiswa' && !selectedCourse.enrolled.includes(u.id));
 
             let manageParticipantsBtn = canManage ? `
-                <button onclick="triggerAddParticipantDropdown()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1">
+                <button onclick="triggerAddParticipantDropdown()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1">
                     <i class="fas fa-user-plus"></i> Tambah Mahasiswa
                 </button>` : '';
 
             html += `
                 <div class="mt-12 border-t border-gray-200 pt-8">
                     <div class="flex justify-between items-center mb-4 gap-2">
-                        <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-users mr-2 text-emerald-600"></i> Mahasiswa & Peserta Kelas (${enrolledStudents.length})</h3>
+                        <h3 class="text-xl font-black text-gray-800"><i class="fas fa-users mr-2 text-emerald-600"></i> Mahasiswa & Peserta Kelas (${enrolledStudents.length})</h3>
                         ${manageParticipantsBtn}
                     </div>
                     
-                    <!-- Form Tambah Mahasiswa (Hidden secara default) -->
                     <div id="add-participant-box" class="bg-emerald-50 border border-emerald-100 p-4 rounded-xl mb-4 hidden">
                         <label class="block text-xs font-bold text-emerald-800 mb-1">PILIH MAHASISWA UNTUK DIDAFTARKAN KE KELAS</label>
                         <div class="flex flex-wrap gap-2">
@@ -1208,6 +1060,12 @@
                 html += `<div class="col-span-full bg-white border border-gray-150 p-6 rounded-xl text-center text-gray-500 italic">Belum ada mahasiswa yang terdaftar di kelas ini.</div>`;
             } else {
                 enrolledStudents.forEach(student => {
+                    const studentAvatar = student.avatar 
+                        ? `<img src="${student.avatar}" class="w-10 h-10 rounded-full object-cover">`
+                        : `<div class="w-10 h-10 bg-emerald-100 text-[#0e5c32] font-bold rounded-full flex items-center justify-center text-xs shrink-0 border border-green-200">
+                             ${student.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                           </div>`;
+
                     let removeBtn = canManage ? `
                         <button onclick="removeParticipantFromCourse('${student.id}')" class="text-red-600 hover:text-red-800 p-1.5 rounded-lg bg-red-50 hover:bg-red-100 transition shadow-sm text-xs" title="Keluarkan dari Kelas">
                             <i class="fas fa-user-minus"></i>
@@ -1216,9 +1074,7 @@
                     html += `
                         <div class="bg-white p-4 rounded-xl border border-gray-150 shadow-sm flex items-center justify-between gap-3">
                             <div class="flex items-center space-x-3 min-w-0">
-                                <div class="w-10 h-10 bg-emerald-100 text-emerald-800 font-bold rounded-full flex items-center justify-center shrink-0">
-                                    ${student.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                                </div>
+                                ${studentAvatar}
                                 <div class="min-w-0">
                                     <h4 class="font-bold text-gray-800 truncate text-sm">${student.name}</h4>
                                     <p class="text-[10px] text-gray-400 font-semibold uppercase">NIM: ${student.id} &bull; Smt ${student.semester || '3'}</p>
@@ -1233,80 +1089,380 @@
                     </div>
                 </div>`;
 
+            // Tombol kembali di bagian paling bawah halaman
+            html += `
+                <div class="mt-8 pt-6 border-t border-gray-200 flex justify-start">
+                    <button onclick="selectedCourse=null; render();" class="text-sm font-bold text-green-700 flex items-center hover:bg-green-50 w-fit p-2.5 rounded-xl transition">
+                        <i class="fas fa-arrow-left mr-2"></i> KEMBALI KE DAFTAR KELAS
+                    </button>
+                </div>`;
+
             container.innerHTML = html;
         }
 
-        // Logika kelola peserta kelas (Dosen & Admin)
-        window.triggerAddParticipantDropdown = function() {
-            const el = document.getElementById('add-participant-box');
-            if (el) el.classList.toggle('hidden');
-        }
-
-        window.addParticipantToCourse = function() {
-            const select = document.getElementById('select-new-participant');
-            const studentId = select.value;
-            if(!studentId) {
-                showNotification('Silakan pilih mahasiswa terlebih dahulu!', 'error');
-                return;
-            }
-
-            if (!selectedCourse.enrolled.includes(studentId)) {
-                selectedCourse.enrolled.push(studentId);
-                const studentName = users.find(u => u.id === studentId)?.name;
-                addLog(`Mendaftarkan mahasiswa ${studentName} ke kelas ${selectedCourse.title}`, currentUser);
-                showNotification(`${studentName} berhasil terdaftar di kelas.`, 'success');
-                render();
-            }
-        }
-
-        window.removeParticipantFromCourse = function(studentId) {
-            const studentName = users.find(u => u.id === studentId)?.name;
-            showConfirmModal(`Keluarkan <strong>${studentName}</strong> dari kepesertaan mata kuliah ini? seluruh rekap nilai kuis mahasiswa ini di kelas akan diarsipkan.`, () => {
-                selectedCourse.enrolled = selectedCourse.enrolled.filter(id => id !== studentId);
-                addLog(`Mengeluarkan mahasiswa ${studentName} dari kelas ${selectedCourse.title}`, currentUser);
-                showNotification('Mahasiswa berhasil dikeluarkan dari kepesertaan kelas.', 'success');
-                render();
-            });
-        }
-
-        // ==============================================================================
-        // 11. MODUL DETAIL CARD - KLIK KARTU LANGSUNG UNTUK PREVIEW (TANPA TOMBOL BUKA)
-        // ==============================================================================
         function renderModuleCard(mod, canManage) {
             const isEditing = editingModule === mod.id;
-            
-            return `
-                <div onclick="openDetailedModuleModal('${mod.id}')" class="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden hover:border-emerald-300 transition-all cursor-pointer">
-                    <!-- Header Modul -->
-                    <div class="bg-gray-50 px-5 py-4 border-b flex justify-between items-center" onclick="event.stopPropagation()">
-                        <div class="flex-grow">
-                            ${isEditing ? `<input id="e-title" value="${mod.title}" class="font-bold text-gray-800 p-2 border rounded-lg bg-white w-2/3 outline-none focus:ring-1 focus:ring-green-500 text-sm">` : `<h4 class="font-black text-gray-800 uppercase tracking-tight text-sm flex items-center"><i class="fas fa-folder text-emerald-600 mr-2 text-base"></i> ${mod.title}</h4>`}
-                        </div>
-                        <div class="flex gap-2 shrink-0">
-                            ${canManage ? (isEditing ? `<button onclick="saveMod('${mod.id}')" class="text-green-600 text-xs font-bold hover:bg-green-100 p-2 rounded transition">SIMPAN</button>` : `<button onclick="editingModule='${mod.id}'; render();" class="text-blue-600 text-xs font-bold hover:bg-blue-100 p-2 rounded transition">EDIT</button> <button onclick="deleteMod('${mod.id}')" class="text-red-600 text-xs font-bold hover:bg-red-100 p-2 rounded transition">HAPUS</button>`) : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="p-6">
-                        ${isEditing ? `<textarea id="e-content" class="w-full h-32 p-3 border rounded-xl outline-none focus:ring-2 focus:ring-green-500 mb-4 text-sm" onclick="event.stopPropagation()">${mod.content}</textarea>` : `<div class="text-sm text-gray-600 leading-relaxed line-clamp-3">${mod.content}</div>`}
-                        
-                        <!-- AREA FILE PROGRESS -->
-                        ${activeModuleUploadId === mod.id ? `
-                            <div class="mt-4 p-5 bg-white border-2 border-green-500 rounded-2xl shadow-lg animate-pulse" onclick="event.stopPropagation()">
-                                <div class="flex justify-between mb-2"><span class="text-xs font-black text-green-700 uppercase">Mengunggah Berkas...</span><span class="text-xs font-black text-green-700">${globalUploadProgress}%</span></div>
-                                <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden border"><div class="bg-green-600 h-full progress-bar-fill" style="width: ${globalUploadProgress}%"></div></div>
-                            </div>` : ''}
+            const categoryTag = selectedCourse.department ? selectedCourse.department.toUpperCase() : "AGRONOMI & BUDIDAYA";
+            const displayDate = mod.date || "23 Juni 2026";
+            const displaySize = mod.fileSize || "4.8 MB";
+            const displayDuration = mod.duration || "30 Menit";
 
-                        <!-- Info lampiran mini di pojok kartu -->
-                        ${(!isEditing && mod.fileName) ? `
-                            <div class="mt-4 inline-flex items-center text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-100 font-semibold">
-                                <i class="fas fa-paperclip mr-1.5"></i> ${mod.fileName}
-                            </div>` : ''}
+            if (isEditing) {
+                return `
+                    <div class="bg-white rounded-2xl border border-gray-150 shadow-sm p-6 space-y-4" onclick="event.stopPropagation()">
+                        <div class="flex justify-between items-center border-b pb-3">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Mode Edit Materi</span>
+                            <div class="flex gap-2">
+                                <button onclick="saveMod('${mod.id}')" class="bg-green-700 text-white text-xs font-bold hover:bg-green-800 px-3 py-2 rounded-lg transition">SIMPAN</button>
+                                <button onclick="editingModule=null; render();" class="bg-gray-100 text-gray-600 text-xs font-semibold hover:bg-gray-200 px-3 py-2 rounded-lg transition">BATAL</button>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 mb-1">JUDUL MODUL</label>
+                                <input id="e-title" value="${mod.title}" class="w-full p-2.5 border rounded-lg bg-white outline-none focus:ring-1 focus:ring-green-500 text-sm font-semibold">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 mb-1">ESTIMASI DURASI PENGERJAAN/MEMBACA (MISAL: 45 MENIT)</label>
+                                <input id="e-duration" value="${displayDuration}" class="w-full p-2.5 border rounded-lg bg-white outline-none focus:ring-1 focus:ring-green-500 text-sm font-semibold" placeholder="Contoh: 45 Menit">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 mb-1">DESKRIPSI RINGKAS</label>
+                                <textarea id="e-content" class="w-full h-24 p-3 border rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-sm">${mod.content}</textarea>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
+            let fileRowHtml = '';
+            if (mod.fileName) {
+                const ext = mod.fileName.split('.').pop().toLowerCase();
+                let iconSvg = '';
+                let iconColorClass = 'bg-gray-50 border-gray-200 text-gray-500';
+                
+                if (['pdf'].includes(ext)) {
+                    iconColorClass = 'bg-red-50 border-red-100 text-red-500';
+                    iconSvg = `
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17h6" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6" />
+                        </svg>`;
+                } else if (['ppt', 'pptx'].includes(ext)) {
+                    iconColorClass = 'bg-amber-50 border-amber-100 text-amber-600';
+                    iconSvg = `
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            <circle cx="12" cy="14" r="2" stroke-width="1.5"/>
+                        </svg>`;
+                } else if (['doc', 'docx'].includes(ext)) {
+                    iconColorClass = 'bg-blue-50 border-blue-100 text-blue-600';
+                    iconSvg = `
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>`;
+                } else {
+                    iconColorClass = 'bg-emerald-50 border-emerald-100 text-emerald-600';
+                    iconSvg = `
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>`;
+                }
+
+                let displayFileName = mod.fileName;
+                if (displayFileName.length > 25) {
+                    displayFileName = displayFileName.substring(0, 21) + '...';
+                }
+
+                fileRowHtml = `
+                    <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-5" onclick="event.stopPropagation()">
+                        <div class="flex items-center space-x-3 min-w-0">
+                            <div class="${iconColorClass} border p-2.5 rounded-xl shadow-inner flex items-center justify-center shrink-0">
+                                ${iconSvg}
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs sm:text-sm font-bold text-gray-800 truncate" title="${mod.fileName}">${displayFileName}</p>
+                                <p class="text-[10px] sm:text-xs text-gray-400 font-semibold">${displaySize}</p>
+                            </div>
+                        </div>
+                        <button onclick="window.open('${mod.fileUrl || '#'}', '_blank')" class="bg-white border border-green-200 text-[#0e5c32] hover:bg-green-50 px-4.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition shadow-sm shrink-0">
+                            Unduh File
+                        </button>
+                    </div>`;
+            } else if (canManage) {
+                fileRowHtml = `
+                    <div class="mt-4 pt-4 border-t border-gray-100 flex justify-center" onclick="event.stopPropagation()">
+                        <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs text-[#0e5c32] bg-green-50 border border-green-200 px-4 py-2 rounded-xl hover:bg-green-100 transition font-black">
+                            <i class="fas fa-cloud-upload-alt"></i> Lampirkan File
+                            <input type="file" class="hidden" onchange="uploadLocalFile(this, '${mod.id}')">
+                        </label>
+                    </div>`;
+            }
+
+            let managementActions = '';
+            if (canManage) {
+                managementActions = `
+                    <div class="absolute top-4 right-4 flex space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation()">
+                        <button onclick="editingModule='${mod.id}'; render();" class="bg-white/95 hover:bg-white text-blue-600 p-2 rounded-xl shadow-sm border border-gray-100 text-xs transition">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteMod('${mod.id}')" class="bg-white/95 hover:bg-white text-red-600 p-2 rounded-xl shadow-sm border border-gray-100 text-xs transition">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>`;
+            }
+
+            return `
+                <div onclick="openDetailedModuleModal('${mod.id}')" class="bg-white rounded-2xl border border-gray-150 p-6 shadow-sm hover:shadow-md transition-shadow relative group cursor-pointer flex flex-col justify-between">
+                    ${managementActions}
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="bg-green-50 text-green-700 font-extrabold px-2.5 py-1 rounded-lg text-[10px] tracking-wider uppercase">
+                                ${categoryTag}
+                            </span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-gray-500 font-semibold text-xs flex items-center gap-1"><i class="far fa-clock"></i> ${displayDuration}</span>
+                                <span class="text-gray-400 font-medium text-xs">${displayDate}</span>
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <h3 class="font-bold text-gray-950 text-base sm:text-lg leading-snug group-hover:text-[#0e5c32] transition-colors">
+                                ${mod.title}
+                            </h3>
+                            <p class="text-xs sm:text-sm text-gray-500 leading-relaxed line-clamp-3">
+                                ${mod.content}
+                            </p>
+                        </div>
                     </div>
+                    ${fileRowHtml}
                 </div>`;
         }
 
-        // Membuka modal detail modul dengan FITUR PREVIEW LAMPIRAN YANG LEBIH BAGUS & RESILIENT
+        function toggleChatDrawer(forceState) {
+            const drawer = document.getElementById('chat-drawer');
+            const chatIcon = document.getElementById('chat-icon-normal');
+            
+            if(forceState !== undefined) {
+                isChatDrawerOpen = forceState;
+            } else {
+                isChatDrawerOpen = !isChatDrawerOpen;
+            }
+
+            if(isChatDrawerOpen) {
+                drawer.classList.remove('hidden');
+                chatIcon.className = "fas fa-comments text-2xl";
+                // Clear active badge
+                clearChatNotificationForActiveRecipient();
+            } else {
+                drawer.classList.add('hidden');
+                chatIcon.className = "far fa-comments text-2xl";
+            }
+        }
+
+        function renderChatDrawerContacts() {
+            const listContainer = document.getElementById('chat-contacts-list');
+            if(!listContainer) return;
+
+            // Contacts list is all other users
+            const contacts = users.filter(u => u.id !== currentUser.id);
+
+            listContainer.innerHTML = contacts.map(c => {
+                const isActive = activeChatRecipientId === c.id;
+                const activeStyle = isActive ? 'bg-emerald-50 text-emerald-900 border-l-4 border-emerald-600' : 'hover:bg-gray-100 text-gray-700';
+                
+                // Avatar preview
+                const avatarImg = c.avatar 
+                    ? `<img src="${c.avatar}" class="w-8 h-8 rounded-full object-cover shrink-0">`
+                    : `<div class="w-8 h-8 bg-emerald-100 text-[#0e5c32] font-bold rounded-full flex items-center justify-center text-xs shrink-0">${c.name[0]}</div>`;
+
+                // Check if this contact has unread messages in notifications
+                const hasUnread = chatMessages.some(m => m.senderId === c.id && m.receiverId === currentUser.id && !m.read);
+                const unreadDot = hasUnread ? `<span class="w-2.5 h-2.5 bg-red-600 rounded-full inline-block shrink-0"></span>` : '';
+
+                return `
+                    <div onclick="selectChatRecipient('${c.id}')" class="p-3 border-b flex items-center gap-2 cursor-pointer transition text-[11px] font-semibold ${activeStyle}">
+                        ${avatarImg}
+                        <div class="min-w-0 flex-grow">
+                            <p class="truncate leading-tight">${c.name}</p>
+                            <span class="text-[9px] text-gray-400 capitalize">${c.role}</span>
+                        </div>
+                        ${unreadDot}
+                    </div>`;
+            }).join('');
+        }
+
+        function selectChatRecipient(recipientId) {
+            activeChatRecipientId = recipientId;
+            const recipient = users.find(u => u.id === recipientId);
+            
+            // Enable inputs
+            document.getElementById('chat-message-input').removeAttribute('disabled');
+            document.getElementById('chat-send-btn').removeAttribute('disabled');
+
+            // Header info
+            document.getElementById('chat-recipient-header').innerText = `Ngobrol dengan: ${recipient.name}`;
+
+            // Mark all received messages from this sender as read
+            chatMessages.forEach(m => {
+                if(m.senderId === recipientId && m.receiverId === currentUser.id) {
+                    m.read = true;
+                }
+            });
+
+            renderChatMessages();
+            renderChatDrawerContacts();
+            updateUnreadChatBadge();
+        }
+
+        function renderChatMessages() {
+            const box = document.getElementById('chat-messages-box');
+            if(!box || !activeChatRecipientId) return;
+
+            // Filter messages between current user and active recipient
+            const convo = chatMessages.filter(m => 
+                (m.senderId === currentUser.id && m.receiverId === activeChatRecipientId) ||
+                (m.senderId === activeChatRecipientId && m.receiverId === currentUser.id)
+            );
+
+            if(convo.length === 0) {
+                box.innerHTML = `<div class="text-gray-400 italic text-center my-auto">Belum ada obrolan. Kirim pesan pertama untuk memulai!</div>`;
+                return;
+            }
+
+            box.innerHTML = convo.map(m => {
+                const isMe = m.senderId === currentUser.id;
+                const bubbleClass = isMe 
+                    ? 'bg-[#0e5c32] text-white rounded-l-xl rounded-tr-xl self-end' 
+                    : 'bg-gray-100 text-gray-800 rounded-r-xl rounded-tl-xl self-start';
+                
+                return `
+                    <div class="max-w-[85%] p-2.5 shadow-sm text-[11px] leading-relaxed flex flex-col ${bubbleClass}">
+                        <span>${m.text}</span>
+                        <span class="text-[8px] opacity-75 mt-1 text-right self-end">${m.time}</span>
+                    </div>`;
+            }).join('');
+
+            // Scroll to bottom
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function sendChatMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-message-input');
+            const text = input.value.trim();
+            if(!text || !activeChatRecipientId) return;
+
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            // Push to local state messages
+            const newMsg = {
+                senderId: currentUser.id,
+                receiverId: activeChatRecipientId,
+                text: text,
+                time: timeStr,
+                read: true
+            };
+            chatMessages.push(newMsg);
+
+            input.value = '';
+            renderChatMessages();
+
+            // Simulasi Balasan Otomatis dari Dosen / Admin (Pemicu Notifikasi Real-time)
+            const recipient = users.find(u => u.id === activeChatRecipientId);
+            setTimeout(() => {
+                const replyNow = new Date();
+                const replyTimeStr = `${String(replyNow.getHours()).padStart(2, '0')}:${String(replyNow.getMinutes()).padStart(2, '0')}`;
+                
+                const mockReplyText = `Halo ${currentUser.name}! Pesan Anda telah saya terima. Mengenai materi dan agenda E-LMS STIPER Sriwigama, silakan akses modul pembelajaran lengkap Anda di dashboard. Terima kasih.`;
+                
+                const replyMsg = {
+                    senderId: recipient.id,
+                    receiverId: currentUser.id,
+                    text: mockReplyText,
+                    time: replyTimeStr,
+                    read: isChatDrawerOpen && activeChatRecipientId === recipient.id // read if open
+                };
+                
+                chatMessages.push(replyMsg);
+
+                if (isChatDrawerOpen && activeChatRecipientId === recipient.id) {
+                    renderChatMessages();
+                } else {
+                    // Trigger Notifikasi Masuk (Point 4)
+                    triggerIncomingChatNotification(recipient, mockReplyText);
+                }
+
+                renderChatDrawerContacts();
+                updateUnreadChatBadge();
+            }, 2500);
+        }
+
+        function triggerIncomingChatNotification(sender, messageText) {
+            const toast = document.getElementById('chat-toast-notification');
+            const toastSender = document.getElementById('chat-toast-sender');
+            const toastBody = document.getElementById('chat-toast-body');
+            const toastAvatar = document.getElementById('chat-toast-avatar');
+
+            if(!toast) return;
+
+            toastSender.innerText = sender.name;
+            toastBody.innerText = messageText;
+
+            if(sender.avatar) {
+                toastAvatar.innerHTML = `<img src="${sender.avatar}" class="w-10 h-10 rounded-full object-cover">`;
+            } else {
+                toastAvatar.innerHTML = sender.name[0].toUpperCase();
+            }
+
+            toast.classList.remove('hidden');
+
+            // Sound feedback (menggunakan Synth audio default tanpa eksternal url sesuai pedoman)
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1); // A5
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } catch(e) {}
+
+            // Hide after 6 seconds
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 6000);
+        }
+
+        function updateUnreadChatBadge() {
+            const badge = document.getElementById('chat-badge-count');
+            if(!badge) return;
+
+            const unreadCount = chatMessages.filter(m => m.receiverId === currentUser.id && !m.read).length;
+
+            if(unreadCount > 0) {
+                badge.innerText = unreadCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function clearChatNotificationForActiveRecipient() {
+            if(!activeChatRecipientId) return;
+            chatMessages.forEach(m => {
+                if(m.senderId === activeChatRecipientId && m.receiverId === currentUser.id) {
+                    m.read = true;
+                }
+            });
+            updateUnreadChatBadge();
+        }
+
         window.openDetailedModuleModal = function(modId) {
             const mod = selectedCourse.modules.find(m => m.id === modId);
             if (!mod) return;
@@ -1314,11 +1470,10 @@
 
             const modal = document.getElementById('modal-module-detail');
             const isDosen = currentUser.role === 'dosen' && currentUser.id === selectedCourse.lecturerId;
-            const isAdmin = currentUser.role === 'admin';
-            const canManage = isDosen || isAdmin;
-            
+            const canManage = isDosen || currentUser.role === 'admin';
+
             let fileUI = '';
-            if (mod.fileUrl && mod.fileName) {
+            if (mod.fileName) {
                 const ext = mod.fileName.split('.').pop().toLowerCase();
                 let icon = 'fa-file-alt';
                 let color = 'bg-gray-100 text-gray-600 border-gray-200';
@@ -1327,60 +1482,24 @@
                 else if (['doc','docx'].includes(ext)) { icon = 'fa-file-word'; color = 'bg-blue-50 text-blue-600 border-blue-100'; }
                 else if (['xls','xlsx'].includes(ext)) { icon = 'fa-file-excel'; color = 'bg-green-50 text-green-600 border-green-100'; }
                 else if (['ppt','pptx'].includes(ext)) { icon = 'fa-file-powerpoint'; color = 'bg-orange-50 text-orange-600 border-orange-100'; }
-                else if (['jpg','png','jpeg','gif','webp'].includes(ext)) { icon = 'fa-file-image'; color = 'bg-purple-50 text-purple-600 border-purple-100'; }
-                else if (['mp4','webm','mov','ogg'].includes(ext)) { icon = 'fa-file-video'; color = 'bg-indigo-50 text-indigo-600 border-indigo-100'; }
 
                 fileUI = `
-                    <div class="mt-6 p-1 bg-gray-50 rounded-2xl border border-gray-150">
-                        <div class="flex flex-wrap items-center justify-between p-4 gap-4 bg-white rounded-xl">
+                    <div class="mt-6 p-1 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div class="flex flex-wrap items-center justify-between p-4 gap-4">
                             <div class="flex items-center space-x-4 min-w-[200px] flex-1">
                                 <div class="${color} p-4 rounded-xl border-2 flex items-center justify-center text-2xl shadow-sm shrink-0"><i class="fas ${icon}"></i></div>
                                 <div class="overflow-hidden">
                                     <p class="text-sm font-black text-gray-800 truncate" title="${mod.fileName}">${mod.fileName}</p>
-                                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">${ext} Document</p>
+                                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">${ext.toUpperCase()} Document &bull; ${mod.duration || '30 Menit'}</p>
                                 </div>
                             </div>
-                            
                             <div class="flex flex-wrap items-center gap-2">
-                                <button onclick="window.open('${mod.fileUrl}', '_blank')" class="bg-[#0e5c32] text-white font-bold text-[11px] px-4 py-2.5 rounded-lg hover:bg-green-800 transition shadow-sm">BUKA DI TAB BARU</button>
+                                <button onclick="window.open('${mod.fileUrl || '#'}', '_blank')" class="bg-[#0e5c32] text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-green-800 transition shadow-sm">BUKA FILE</button>
                                 ${canManage ? `
-                                    <button onclick="triggerUpdateFile('${mod.id}')" class="bg-blue-600 text-white font-bold text-[11px] px-4 py-2.5 rounded-lg hover:bg-blue-700 transition shadow-sm">GANTI BERKAS</button>
-                                    <button onclick="deleteFile('${mod.id}')" class="bg-red-50 text-red-600 font-bold text-[11px] px-4 py-2.5 rounded-lg hover:bg-red-100 transition">HAPUS</button>
+                                    <button onclick="triggerUpdateFile('${mod.id}')" class="bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-700 transition shadow-sm">GANTI</button>
+                                    <button onclick="deleteFile('${mod.id}')" class="bg-red-50 text-red-600 font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-red-100 transition">HAPUS</button>
                                 ` : ''}
                             </div>
-                        </div>
-
-                        <!-- PRATINJAU INTERAKTIF YANG TELAH DIPERBAIKI -->
-                        <div class="p-4 bg-gray-100 rounded-b-xl border-t">
-                            <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2"><i class="fas fa-eye"></i> Area Pratinjau Lampiran</h5>
-                            
-                            ${['mp4', 'webm', 'ogg'].includes(ext) ? `
-                                <div class="flex justify-center bg-black rounded-lg overflow-hidden">
-                                    <video controls class="w-full max-h-[300px] bg-black">
-                                        <source src="${mod.fileUrl}">
-                                        Browser Anda tidak mendukung pemutaran video langsung.
-                                    </video>
-                                </div>` : ''}
-
-                            ${['jpg', 'png', 'jpeg', 'gif', 'webp'].includes(ext) ? `
-                                <div class="flex justify-center bg-white p-2 rounded-lg border">
-                                    <img src="${mod.fileUrl}" class="max-h-[300px] object-contain rounded" onerror="this.onerror=null; this.src='https://placehold.co/400x300?text=Gambar+Gagal+Dimuat';">
-                                </div>` : ''}
-
-                            ${['pdf'].includes(ext) ? `
-                                <div class="rounded-lg overflow-hidden border bg-white">
-                                    <iframe src="${mod.fileUrl}" class="w-full h-80 rounded" frameBorder="0"></iframe>
-                                    <p class="text-[10px] text-gray-400 p-2 text-center bg-gray-50 italic">
-                                        Tips: Jika pratinjau PDF tidak muncul otomatis di smartphone, klik tombol "Buka Di Tab Baru" di atas untuk membaca langsung.
-                                    </p>
-                                </div>` : ''}
-
-                            ${!['mp4', 'webm', 'ogg', 'jpg', 'png', 'jpeg', 'gif', 'webp', 'pdf'].includes(ext) ? `
-                                <div class="bg-white p-6 rounded-lg text-center text-xs text-gray-500 border border-dashed">
-                                    <i class="fas fa-file-excel text-3xl text-green-600 mb-2"></i>
-                                    <p class="font-bold text-gray-700">Format file ini (.${ext}) tidak mendukung pratinjau instan.</p>
-                                    <p class="mt-1">Silakan klik "BUKA DI TAB BARU" atau unduh untuk mengakses file lengkap.</p>
-                                </div>` : ''}
                         </div>
                     </div>`;
             } else if (canManage) {
@@ -1388,23 +1507,22 @@
                     <div class="mt-4 border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:bg-green-50 transition-all group">
                         <label class="cursor-pointer">
                             <i class="fas fa-cloud-upload-alt text-4xl text-gray-300 group-hover:text-green-500 mb-2 transition"></i>
-                            <p class="text-sm font-bold text-gray-500 group-hover:text-green-700">Lampirkan Berkas Materi (Word, Excel, PPT, Video, PDF, Gambar)</p>
+                            <p class="text-sm font-bold text-gray-500 group-hover:text-green-700">Lampirkan Berkas Materi (Word, Excel, PPT, PDF)</p>
                             <input type="file" class="hidden" onchange="uploadLocalFile(this, '${mod.id}')">
                         </label>
                     </div>`;
             }
 
             modal.innerHTML = `
-                <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 border border-gray-100 max-h-[90vh] overflow-y-auto no-scrollbar fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 border border-gray-100 max-h-[90vh] overflow-y-auto no-scrollbar">
                     <div class="flex justify-between items-start border-b pb-4 mb-4 gap-4">
                         <div>
-                            <span class="text-[10px] font-black uppercase tracking-widest text-green-700">Materi Kelas</span>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-green-700">Materi Kelas &bull; Estimasi: ${mod.duration || '30 Menit'}</span>
                             <h3 class="font-black text-xl text-gray-900 leading-tight mt-1">${mod.title}</h3>
                         </div>
                         <button onclick="closeDetailedModuleModal()" class="text-gray-400 hover:text-red-500 transition text-lg"><i class="fas fa-times"></i></button>
                     </div>
-                    <div class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">${mod.content}</div>
-                    
+                    <div class="text-sm text-gray-600 leading-relaxed whitespace-pre-line mb-4">${mod.content}</div>
                     <div id="modal-file-area">${fileUI}</div>
                 </div>`;
             modal.classList.remove('hidden');
@@ -1415,9 +1533,6 @@
             activeDetailedModule = null;
         };
 
-        // ==============================================================================
-        // 12. LOGIKA MATERI (DOSEN & ADMIN)
-        // ==============================================================================
         window.handleDirectFileUpload = function(input) {
             if (input.files && input.files[0]) {
                 const file = input.files[0];
@@ -1443,6 +1558,9 @@
                             content: `Materi berbentuk berkas digital "${file.name}" berhasil diunggah langsung oleh pengampu.`,
                             fileName: file.name,
                             fileType: fileType,
+                            fileSize: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
+                            date: '23 Juni 2026',
+                            duration: '45 Menit',
                             fileUrl: URL.createObjectURL(file) 
                         });
 
@@ -1469,6 +1587,7 @@
                         const mod = selectedCourse.modules.find(m => m.id === modId);
                         mod.fileName = file.name;
                         mod.fileType = file.type;
+                        mod.fileSize = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
                         mod.fileUrl = URL.createObjectURL(file);
                         activeModuleUploadId = null;
                         showNotification('Berkas lampiran berhasil dipasang!', 'success');
@@ -1513,7 +1632,8 @@
                 content: 'Tuliskan isi modul pembelajaran Anda di sini.',
                 fileName: null,
                 fileType: null,
-                fileUrl: null
+                fileUrl: null,
+                duration: '30 Menit'
             });
             render();
             showNotification('Materi baru berhasil ditambahkan!', 'success');
@@ -1522,6 +1642,7 @@
         window.saveMod = (id) => {
             const m = selectedCourse.modules.find(x=>x.id===id);
             m.title = document.getElementById('e-title').value;
+            m.duration = document.getElementById('e-duration').value || '30 Menit';
             m.content = document.getElementById('e-content').value;
             editingModule = null;
             showNotification('Materi berhasil disimpan', 'success');
@@ -1547,9 +1668,6 @@
         
         window.openCourse = function(cId) { selectedCourse = courses.find(x => x.id === cId); render(); };
 
-        // ==============================================================================
-        // 13. MODUL QUIZ ENGINE (CREATOR, EDITOR & EXAM SHEET)
-        // ==============================================================================
         window.createNewQuiz = function() {
             activeQuizEditId = 'NEW';
             quizFormState = {
@@ -1778,7 +1896,7 @@
                         </div>
 
                         <div class="pt-4 flex flex-wrap gap-2">
-                            <button onclick="addQuizQuestion()" class="bg-blue-50 text-blue-700 border border-blue-200 px-4 py-2.5 rounded-lg text-xs font-bold hover:bg-blue-100 transition"><i class="fas fa-plus mr-1.5"></i> Tambah Pertanyaan</button>
+                            <button onclick="addQuizQuestion()" class="bg-blue-50 text-blue-700 border border-blue-200 px-4 py-2.5 rounded-lg text-xs font-bold hover:bg-blue-100 transition"><i class="fas fa-plus mr-1.5"></i> Pertanyaan Baru</button>
                         </div>
 
                         <div class="border-t pt-6 flex justify-end gap-2">
@@ -1833,9 +1951,346 @@
                 </div>`;
         }
 
-        // ==============================================================================
-        // 14. LOG PENGGUNA (UNTUK ADMIN)
-        // ==============================================================================
+        function renderManageUsers(container) {
+            let filteredUsers = users.filter(u => manageUserFilter === 'all' || u.role === manageUserFilter);
+
+            let html = `
+                <div class="bg-white rounded-2xl shadow-sm border p-4 md:p-6 w-full overflow-hidden fade-in">
+                    <div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4 border-b pb-4">
+                        <h2 class="text-xl md:text-2xl font-bold text-gray-800 flex items-center"><i class="fas fa-users-cog text-green-700 mr-2"></i> Kelola Pengguna</h2>
+                        <div class="flex flex-wrap gap-2">
+                            <label class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-sm flex items-center cursor-pointer transition">
+                                <i class="fas fa-file-import mr-2"></i> Import Data (Excel)
+                                <input type="file" class="hidden" accept=".xlsx, .xls, .csv" onchange="handleExcelImport(this)">
+                            </label>
+                            
+                            <button onclick="exportUsersToExcel()" class="bg-[#0e5c32] hover:bg-green-800 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-sm flex items-center transition">
+                                <i class="fas fa-file-excel mr-2"></i> Export Data (Excel)
+                            </button>
+
+                            <button onclick="adminEditingUser='NEW'; render();" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-sm flex items-center transition">
+                                <i class="fas fa-user-plus mr-2"></i> Tambah Baru
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-red-50 border border-red-100 p-5 rounded-2xl mb-6">
+                        <h3 class="text-sm font-bold text-red-700 mb-3 flex items-center gap-1.5"><i class="fas fa-exclamation-triangle"></i> Menu Penghapusan Massal Pengguna</h3>
+                        <div class="flex flex-wrap gap-3 items-center">
+                            <select id="md-role-select" class="border p-2.5 rounded-lg text-sm bg-white focus:ring-1 focus:ring-red-500 outline-none">
+                                <option value="">-- Pilih Peran / Role --</option>
+                                <option value="mahasiswa">Mahasiswa</option>
+                                <option value="dosen">Dosen</option>
+                            </select>
+                            <input type="text" id="md-major-input" placeholder="Jurusan / Program Studi" class="border p-2.5 rounded-lg text-sm bg-white focus:ring-1 focus:ring-red-500 outline-none">
+                            <input type="number" id="md-semester-input" placeholder="Semester" class="border p-2.5 rounded-lg text-sm bg-white w-28 focus:ring-1 focus:ring-red-500 outline-none">
+                            
+                            <button onclick="executeAdminMassDelete()" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition">
+                                <i class="fas fa-trash-alt mr-1.5"></i> Hapus Massal
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-5 flex items-center gap-3">
+                        <span class="text-sm font-bold text-gray-500">Saring Berdasarkan Peran:</span>
+                        <select onchange="manageUserFilter=this.value; render();" class="border p-2.5 rounded-xl text-sm bg-white shadow-sm focus:ring-1 focus:ring-green-500 outline-none">
+                            <option value="all" ${manageUserFilter==='all'?'selected':''}>Semua Role</option>
+                            <option value="admin" ${manageUserFilter==='admin'?'selected':''}>Admin</option>
+                            <option value="dosen" ${manageUserFilter==='dosen'?'selected':''}>Dosen</option>
+                            <option value="mahasiswa" ${manageUserFilter==='mahasiswa'?'selected':''}>Mahasiswa</option>
+                        </select>
+                    </div>`;
+
+            if (adminEditingUser) {
+                const isNew = adminEditingUser === 'NEW';
+                const u = isNew ? { role: 'mahasiswa', name: '', username: '' } : users.find(x => x.id === adminEditingUser);
+                
+                html += `
+                    <div class="bg-gray-50 p-4 md:p-6 rounded-lg border mb-6 shadow-sm border-l-4 border-purple-500">
+                        <h3 class="text-lg font-bold mb-4">${isNew ? 'Tambah Pengguna Baru' : 'Edit Data: ' + u.name}</h3>
+                        <form id="admin-user-form" onsubmit="handleAdminSaveUser(event, '${isNew}')" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label class="text-sm font-medium">Peran</label>
+                                    <select id="au-role" class="w-full p-2.5 border rounded-lg bg-white outline-none focus:ring-1 focus:ring-green-500 animate" onchange="updateAdminFormFields(this.value)">
+                                        <option value="mahasiswa" ${u.role==='mahasiswa'?'selected':''}>Mahasiswa</option>
+                                        <option value="dosen" ${u.role==='dosen'?'selected':''}>Dosen</option>
+                                        <option value="admin" ${u.role==='admin'?'selected':''}>Administrator</option>
+                                    </select>
+                                </div>
+                                <div><label class="text-sm font-medium">Nama Lengkap</label><input type="text" id="au-name" value="${u.name}" required class="w-full p-2.5 border rounded-lg outline-none"></div>
+                                <div><label class="text-sm font-medium">ID Pengguna (NIP/NIM)</label><input type="text" id="au-id" value="${u.id}" ${!isNew ? 'disabled bg-gray-100 cursor-not-allowed text-gray-400' : ''} required class="w-full p-2.5 border rounded-lg outline-none"></div>
+                                <div><label class="text-sm font-medium">Username Login</label><input type="text" id="au-user" value="${u.username}" ${!isNew ? 'disabled bg-gray-100 cursor-not-allowed text-gray-400' : ''} required class="w-full p-2.5 border rounded-lg outline-none"></div>
+                                ${isNew ? `
+                                <div><label class="text-sm font-medium">Kata Sandi Awal</label><input type="text" id="au-pass" value="password123" class="w-full p-2.5 border rounded-lg bg-gray-100 outline-none" readonly></div>` : ''}
+                            </div>
+                            <div id="dynamic-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t"></div>
+                            <div class="flex gap-2 pt-4">
+                                <button type="submit" class="bg-green-600 text-white font-bold px-6 py-2.5 rounded-lg shadow-sm hover:bg-green-700 transition">Simpan Pengguna</button>
+                                <button type="button" onclick="adminEditingUser=null; render();" class="border font-semibold px-6 py-2.5 rounded-lg bg-white hover:bg-gray-50 transition">Batal</button>
+                            </div>
+                        </form>
+                    </div>`;
+                setTimeout(() => updateAdminFormFields(u.role, u), 50);
+            } 
+            else if (adminResettingUser) {
+                const u = users.find(x => x.id === adminResettingUser);
+                html += `
+                    <div class="bg-orange-50 p-6 rounded-2xl border mb-6 shadow-sm border-l-4 border-orange-500">
+                        <h3 class="text-lg font-bold mb-4 text-orange-800"><i class="fas fa-key mr-2"></i> Reset Sandi: ${u.name}</h3>
+                        <form id="admin-reset-form" onsubmit="handleAdminResetSubmit(event)" class="space-y-4">
+                            <div><label class="text-xs font-bold text-gray-700 block mb-1">Kata Sandi Baru</label><input type="text" id="ar-pass" value="password123" required class="w-full md:w-1/2 p-2.5 border rounded-lg outline-none"></div>
+                            <div class="bg-white p-4 border border-orange-200 rounded-xl">
+                                <label class="text-xs font-bold text-gray-800 block mb-2"><i class="fas fa-file-upload mr-1 text-orange-600"></i> Unggah Formulir Fisik Bukti Permintaan (Wajib)</label>
+                                <input type="file" id="ar-file" accept="image/*,.pdf" class="w-full text-xs text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700" required>
+                                <p class="text-[10px] text-gray-400 mt-1">Bukti fisik ini akan terekam secara permanen di basis data demi kelengkapan log keamanan sistem.</p>
+                            </div>
+                            <div class="flex gap-2 pt-2">
+                                <button type="submit" class="bg-orange-600 text-white font-bold px-6 py-2.5 rounded-lg shadow-sm hover:bg-orange-700 transition">Konfirmasi & Reset</button>
+                                <button type="button" onclick="adminResettingUser=null; render();" class="border font-semibold px-6 py-2.5 rounded-lg bg-white hover:bg-gray-50 transition">Batal</button>
+                            </div>
+                        </form>
+                    </div>`;
+            }
+            else {
+                html += `
+                    <div class="overflow-x-auto rounded-xl border no-scrollbar">
+                        <table class="min-w-full text-left border-collapse bg-white whitespace-nowrap">
+                            <thead>
+                                <tr class="bg-gray-100 border-b">
+                                    <th class="p-3 text-sm font-semibold">ID Pengguna (NIP/NIM)</th>
+                                    <th class="p-3 text-sm font-semibold">Nama Pengguna</th>
+                                    <th class="p-3 text-sm font-semibold">Peran/Role Pengguna</th>
+                                    <th class="p-3 text-sm font-semibold">Info</th>
+                                    <th class="p-3 text-sm font-semibold text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${filteredUsers.map(u => {
+                                    let proofBtn = u.resetFormUrl ? `<button onclick="window.open('${u.resetFormUrl}', '_blank')" class="text-orange-600 bg-orange-50 hover:bg-orange-100 p-2 rounded mx-1 text-xs" title="Bukti Reset"><i class="fas fa-file-contract mr-1"></i> Bukti</button>` : '';
+                                    return `
+                                    <tr class="border-b hover:bg-gray-50 transition-colors">
+                                        <td class="p-3 text-sm font-semibold text-gray-700">${u.id}</td>
+                                        <td class="p-3 text-sm font-medium">
+                                            <div class="leading-tight">
+                                                <p class="text-gray-800">${u.name}</p>
+                                                <p class="text-xs text-gray-400 font-normal">@${u.username}</p>
+                                            </div>
+                                        </td>
+                                        <td class="p-3 text-sm"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${u.role === 'admin' ? 'bg-red-100 text-red-700' : (u.role === 'dosen' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700')}">${u.role.toUpperCase()}</span></td>
+                                        <td class="p-3 text-sm text-gray-600">${u.role === 'mahasiswa' ? `Smt: ${u.semester || '-'} &bull; ${u.major || '-'}` : (u.role === 'dosen' ? u.department || '-' : '-')}</td>
+                                        <td class="p-3 text-sm text-center font-bold">
+                                            <button onclick="adminEditingUser='${u.id}'; render();" class="text-indigo-600 bg-indigo-50 p-2 rounded-lg mx-1 hover:bg-indigo-100 transition" title="Edit Data Pengguna"><i class="fas fa-edit"></i></button>
+                                            <button onclick="adminResettingUser='${u.id}'; render();" class="text-orange-600 bg-orange-50 p-2 rounded-lg mx-1 hover:bg-orange-100 transition" title="Reset Password"><i class="fas fa-key"></i></button>
+                                            <button onclick="handleAdminDeleteUser('${u.id}')" class="text-red-600 bg-red-50 p-2 rounded-lg mx-1 hover:bg-red-100 transition" title="Hapus Pengguna" ${u.id === currentUser.id ? 'disabled opacity-50 cursor-not-allowed' : ''}><i class="fas fa-trash"></i></button>
+                                            ${proofBtn}
+                                        </td>
+                                    </tr>`;
+                                }).join('')}
+                                ${filteredUsers.length === 0 ? '<tr><td colspan="5" class="p-4 text-center text-gray-500">Data tidak ditemukan.</td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>`;
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        window.updateAdminFormFields = function(role, userObj = {}) {
+            const container = document.getElementById('dynamic-fields');
+            if(!container) return;
+            const u = userObj.id ? userObj : (adminEditingUser !== 'NEW' ? users.find(x => x.id === adminEditingUser) : {});
+            
+            if(role === 'mahasiswa') {
+                container.innerHTML = `
+                    <div><label class="text-xs font-bold text-gray-500">Program Studi / Jurusan</label><input type="text" id="au-dep" value="${u.major||''}" required class="w-full p-2.5 border rounded-lg outline-none focus:ring-1 focus:ring-green-500"></div>
+                    <div><label class="text-xs font-bold text-gray-500">Semester Aktif</label><input type="number" id="au-sem" value="${u.semester||''}" required class="w-full p-2.5 border rounded-lg outline-none focus:ring-1 focus:ring-green-500"></div>`;
+            } else if (role === 'dosen') {
+                container.innerHTML = `
+                    <div><label class="text-xs font-bold text-gray-500">Departemen / Jabatan</label><input type="text" id="au-dep" value="${u.department||''}" required class="w-full p-2.5 border rounded-lg outline-none focus:ring-1 focus:ring-green-500"></div>`;
+            } else {
+                container.innerHTML = '';
+            }
+        }
+
+        window.handleAdminSaveUser = function(e, isNewStr) {
+            e.preventDefault();
+            const isNew = isNewStr === 'true';
+            const role = document.getElementById('au-role').value;
+            const name = document.getElementById('au-name').value;
+            const idVal = document.getElementById('au-id').value.trim();
+            const usernameVal = document.getElementById('au-user').value.trim();
+
+            if (isNew) {
+                if(users.some(x => x.id === idVal)) {
+                    showNotification('ID Pengguna (NIP/NIM) sudah digunakan!', 'error');
+                    return;
+                }
+                if(users.some(x => x.username === usernameVal)) {
+                    showNotification('Username sudah digunakan!', 'error');
+                    return;
+                }
+            }
+
+            let targetUser;
+            if (isNew) {
+                targetUser = { id: idVal, username: usernameVal, password: 'password123', role: role, name: name, firstAccess: getFormattedTime(), lastAccess: '-', avatar: null };
+                users.push(targetUser);
+            } else {
+                targetUser = users.find(u => u.id === adminEditingUser);
+                targetUser.name = name;
+                targetUser.role = role;
+            }
+
+            if(role === 'mahasiswa') {
+                targetUser.major = document.getElementById('au-dep').value;
+                targetUser.semester = parseInt(document.getElementById('au-sem').value);
+                delete targetUser.department;
+            } else if (role === 'dosen') {
+                targetUser.department = document.getElementById('au-dep').value;
+                delete targetUser.major;
+                delete targetUser.semester;
+            }
+
+            adminEditingUser = null;
+            showNotification(isNew ? 'Pengguna baru berhasil ditambahkan!' : 'Data pengguna berhasil diperbarui!', 'success');
+            render();
+        }
+
+        window.handleAdminDeleteUser = function(idVal) {
+            if(idVal === currentUser.id) return;
+            showConfirmModal('Apakah Anda yakin ingin menghapus pengguna ini secara permanen dari sistem E-LMS?', () => {
+                users = users.filter(u => u.id !== idVal);
+                showNotification('Pengguna berhasil dihapus.', 'success');
+                render();
+            });
+        }
+
+        window.handleAdminResetSubmit = function(e) {
+            e.preventDefault();
+            const newPass = document.getElementById('ar-pass').value;
+            const fileInput = document.getElementById('ar-file');
+
+            if(fileInput.files.length === 0) {
+                showNotification('Formulir bukti fisik pengajuan wajib diunggah!', 'error');
+                return;
+            }
+
+            const targetUser = users.find(u => u.id === adminResettingUser);
+            if(targetUser) {
+                targetUser.password = newPass;
+                targetUser.resetFormUrl = URL.createObjectURL(fileInput.files[0]);
+                targetUser.resetFormName = fileInput.files[0].name;
+                addLog(`Reset sandi akun: ${targetUser.name}`, currentUser);
+                showNotification('Sandi berhasil direset dan bukti tersimpan!', 'success');
+            }
+
+            adminResettingUser = null;
+            render();
+        }
+
+        window.executeAdminMassDelete = function() {
+            const role = document.getElementById('md-role-select').value;
+            const major = document.getElementById('md-major-input').value.trim();
+            const semester = document.getElementById('md-semester-input').value.trim();
+
+            if(!role && !major && !semester) {
+                showNotification('Pilih kriteria untuk melakukan penghapusan massal!', 'error');
+                return;
+            }
+
+            let msg = 'Apakah Anda yakin ingin menghapus secara massal pengguna yang cocok dengan kriteria berikut?<br>';
+            if(role) msg += `&bull; Peran: <strong>${role}</strong><br>`;
+            if(major) msg += `&bull; Jurusan/Program Studi: <strong>${major}</strong><br>`;
+            if(semester) msg += `&bull; Semester: <strong>${semester}</strong>`;
+
+            showConfirmModal(msg, () => {
+                const initLen = users.length;
+                users = users.filter(u => {
+                    if (u.id === currentUser.id) return true;
+
+                    let match = true;
+                    if (role && u.role !== role) match = false;
+                    if (major && u.major !== major && u.department !== major) match = false;
+                    if (semester && String(u.semester) !== semester) match = false;
+
+                    return !match;
+                });
+
+                const deletedCount = initLen - users.length;
+                showNotification(`Berhasil menghapus ${deletedCount} pengguna secara massal!`, 'success');
+                render();
+            });
+        }
+
+        window.exportUsersToExcel = function() {
+            if (typeof XLSX !== 'undefined') {
+                const data = users.map(u => ({
+                    'ID Pengguna / NIP / NIM': u.id,
+                    'Username': u.username,
+                    'Peran / Role': u.role.toUpperCase(),
+                    'Nama Lengkap': u.name,
+                    'Email Akademik': u.email || '-',
+                    'Nomor Telepon': u.phone || '-',
+                    'Semester': u.semester || '-',
+                    'Jurusan / Program Studi': u.major || u.department || '-'
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Pengguna E-LMS");
+                XLSX.writeFile(wb, "Data_Pengguna_STIPER.xlsx");
+                showNotification('Data pengguna berhasil diekspor ke Excel!', 'success');
+            } else {
+                showNotification('Library ekspor gagal dimuat!', 'error');
+            }
+        }
+
+        window.handleExcelImport = function(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                input.value = '';
+                showNotification(`Mengimpor "${file.name}"...`, 'success');
+                setTimeout(() => {
+                    users.push(
+                        { id: '2021004', username: 'mhs4', password: 'password', role: 'mahasiswa', name: 'Rian Hidayat', major: 'Agroteknologi', semester: 3, email: 'rian@mhs.sriwigama.ac.id', firstAccess: getFormattedTime(), lastAccess: '-', avatar: null },
+                        { id: '198203032009012002', username: 'dosen3', password: 'password', role: 'dosen', name: 'Suhartono, M.P.', department: 'Agroteknologi', email: 'suhartono@sriwigama.ac.id', firstAccess: getFormattedTime(), lastAccess: '-', avatar: null }
+                    );
+                    showNotification('Import massal selesai! 2 pengguna baru berhasil ditambahkan.', 'success');
+                    render();
+                }, 1000);
+            }
+        }
+
+        window.triggerAddParticipantDropdown = function() {
+            const box = document.getElementById('add-participant-box');
+            if (box) box.classList.toggle('hidden');
+        }
+
+        window.addParticipantToCourse = function() {
+            const select = document.getElementById('select-new-participant');
+            const studentId = select.value;
+            if (!studentId) {
+                showNotification('Pilih mahasiswa terlebih dahulu!', 'error');
+                return;
+            }
+            if (selectedCourse.enrolled.includes(studentId)) {
+                showNotification('Mahasiswa sudah terdaftar!', 'error');
+                return;
+            }
+            selectedCourse.enrolled.push(studentId);
+            showNotification('Mahasiswa berhasil didaftarkan ke kelas.', 'success');
+            render();
+        }
+
+        window.removeParticipantFromCourse = function(studentId) {
+            showConfirmModal('Keluarkan mahasiswa ini dari kelas?', () => {
+                selectedCourse.enrolled = selectedCourse.enrolled.filter(id => id !== studentId);
+                showNotification('Mahasiswa berhasil dikeluarkan dari kelas.', 'success');
+                render();
+            });
+        }
+
         function getSystemLogsHTML() {
             return `
                 <div class="bg-white rounded-lg shadow-sm border p-4 md:p-6 fade-in">
@@ -1886,9 +2341,6 @@
             if(clockEl) clockEl.textContent = getFormattedTime();
         }
 
-        // ==============================================================================
-        // 15. LAPORAN & HISTORI MAHASISWA
-        // ==============================================================================
         function getReportsHTML() {
             let enrolledCourses = courses.filter(c => c.enrolled.includes(currentUser.id));
             
